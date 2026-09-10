@@ -246,6 +246,11 @@
     const BOT_USERNAME = 'titan_disciplin_bot'; // Укажите юзернейм вашего бота
     const DEV_TELEGRAM_USERNAMES = ['egorbai59'];
     const DEV_TELEGRAM_IDS = [938527107];
+      // ... ниже в строке проверки:
+    const isDev = currentTgUser && (
+        DEV_TELEGRAM_USERNAMES.includes(currentTgUser.username) ||
+        DEV_TELEGRAM_IDS.includes(currentTgUser.id)
+    );
 
     const tg = window.Telegram?.WebApp;
     if (tg) {
