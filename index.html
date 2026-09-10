@@ -80,12 +80,14 @@
     .day-cell.frozen { background: rgba(56, 189, 248, 0.2); border-color: var(--ice); color: var(--ice); }
     .day-cell.today { border: 2px solid #58a6ff; font-weight: 800; }
     .day-cell.locked { opacity: 0.25; cursor: not-allowed; border: 1px dashed rgba(255,255,255,0.1); }
+    
+    /* Новые стили для дней до регистрации */
+    .day-cell.pre-reg { opacity: 0.15; background: transparent; cursor: default; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: flex-end; justify-content: center; }
     .modal.open { display: flex; }
     .modal-content { background: #161b22; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
 
-    /* Полноэкранный НЕПРОЗРАЧНЫЙ онбординг */
     .onboarding-screen { display: none; position: fixed; inset: 0; background: #0b0e14; z-index: 9999; padding: 24px 16px; overflow-y: auto; }
     .onboarding-screen.open { display: block; }
     .catalog-group { margin-bottom: 18px; }
@@ -101,7 +103,6 @@
 <body>
   <div class="app-container">
 
-    <!-- ONBOARDING (ВСПЛЫВАЕТ ПЕРВЫМ) -->
     <div class="onboarding-screen" id="onboardingScreen">
       <div style="max-width: 480px; margin: 0 auto; width: 100%; padding-bottom: 90px;">
         <div style="text-align: center; margin-bottom: 24px;">
@@ -118,14 +119,13 @@
       </div>
     </div>
 
-    <!-- HEADER -->
     <div class="header">
       <div>
         <div class="greeting" id="devBadge">Фокус дня</div>
         <div class="user-title" id="userNameLabel">Discipline OS</div>
       </div>
       <div class="header-badges">
-        <div class="freeze-badge" onclick="useStreakFreeze()">
+        <div class="freeze-badge" onclick="handleFreezeClick()">
           <span>🧊</span>
           <span id="freezeCount">1 шт.</span>
         </div>
@@ -180,7 +180,7 @@
         </div>
       </div>
       <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;" id="calMonthTitle">Календарь</div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Зелёный = 100% плана. Голубой = заморозка серии.</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Зелёный = 100%. Голубой = заморозка. Тусклые = до регистрации.</div>
       <div class="days-grid" id="calGrid"></div>
     </div>
 
@@ -195,7 +195,7 @@
             <div style="display:flex; justify-content:space-between; font-weight:700;">
               <span>👑 Discipline MAX</span><span style="color:#3fb950;">250 ₽ / мес</span>
             </div>
-            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Безлимит привычек • Авто-защита серий</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Безлимит привычек • Покупка заморозок</div>
           </div>
           <button onclick="alert('Оплата через Stars будет доступна в следующем релизе!')" style="width:100%; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; color:#fff; font-weight:700; padding:14px; border-radius:14px; margin-top:16px; font-size:14px; cursor:pointer;">
             Подключить
@@ -204,7 +204,6 @@
       </div>
     </div>
 
-    <!-- MODAL: ADD -->
     <div class="modal" id="addModal">
       <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -220,7 +219,6 @@
       </div>
     </div>
 
-    <!-- MODAL: STORIES -->
     <div class="modal" id="storiesModal">
       <div class="modal-content" style="text-align:center;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -238,7 +236,6 @@
       </div>
     </div>
 
-    <!-- NAVIGATION -->
     <div class="nav-bar">
       <div class="nav-item active" onclick="tab('today', this)"><div>⚡</div><div>Сегодня</div></div>
       <div class="nav-item" onclick="tab('cal', this)"><div>📅</div><div>Календарь</div></div>
@@ -248,9 +245,6 @@
   </div>
 
   <script>
-    // -------------------------------------------------------------
-    // ПАРАМЕТРЫ СОЗДАТЕЛЯ (УЖЕ ВШИТЫ)
-    // -------------------------------------------------------------
     const BOT_USERNAME = 'titan_disciplin_bot';
     const DEV_TELEGRAM_USERNAMES = ['egorbai59'];
     const DEV_TELEGRAM_IDS = [938527107];
@@ -268,7 +262,6 @@
 
     const currentTgUser = tg?.initDataUnsafe?.user;
 
-    // ПРОВЕРКА СОЗДАТЕЛЯ
     const isDev = Boolean(
       currentTgUser && (
         (currentTgUser.username && DEV_TELEGRAM_USERNAMES.includes(currentTgUser.username.toLowerCase())) ||
@@ -294,7 +287,7 @@
       document.getElementById('devBadge').innerText = '👑 CREATOR ACCESS';
       document.getElementById('devBadge').style.color = '#fbbf24';
       document.getElementById('proTabTitle').innerText = 'Max Status';
-      document.getElementById('tierListBlock').innerHTML = '<div style="color:#3fb950; font-weight:700; padding:12px; background:rgba(46,160,67,0.1); border-radius:12px;">👑 Доступ Создателя активен: безлимит привычек и полный контроль.</div>';
+      document.getElementById('tierListBlock').innerHTML = '<div style="color:#3fb950; font-weight:700; padding:12px; background:rgba(46,160,67,0.1); border-radius:12px;">👑 Доступ Создателя активен.</div>';
     }
 
     if (currentTgUser?.first_name) {
@@ -327,6 +320,10 @@
     const FREEZES_KEY = `disc_freezes_${userId}`;
     const DATE_KEY = `disc_last_date_${userId}`;
     const HISTORY_KEY = `disc_history_${userId}`;
+    
+    // Новые ключи для заморозок и календаря
+    const REG_DATE_KEY = `disc_reg_date_${userId}`;
+    const FREEZE_MONTH_KEY = `disc_freeze_month_${userId}`;
 
     function safeJsonParse(key, fallback) {
       try {
@@ -339,8 +336,11 @@
 
     let habits = safeJsonParse(STORAGE_KEY, null);
     let streak = parseInt(localStorage.getItem(STREAK_KEY) || '0', 10);
-    let freezes = parseInt(localStorage.getItem(FREEZES_KEY) || '1', 10);
+    
+    // Инициализируем количество заморозок (по умолчанию 1)
+    let freezes = localStorage.getItem(FREEZES_KEY) !== null ? parseInt(localStorage.getItem(FREEZES_KEY), 10) : 1;
     let history = safeJsonParse(HISTORY_KEY, {});
+    let regDate = localStorage.getItem(REG_DATE_KEY);
 
     function getLocalDateString(d = new Date()) {
       const year = d.getFullYear();
@@ -351,6 +351,19 @@
 
     let todayStr = getLocalDateString();
     let celebratedToday = false;
+
+    // Логика ежемесячной бесплатной заморозки
+    function checkMonthlyFreeze() {
+      const currentMonthStr = todayStr.substring(0, 7); // Формат "YYYY-MM"
+      const lastFreezeMonth = localStorage.getItem(FREEZE_MONTH_KEY);
+
+      if (lastFreezeMonth !== currentMonthStr) {
+        if (freezes < 1) freezes = 1; // Даем 1 бесплатную, если баланс пуст
+        localStorage.setItem(FREEZE_MONTH_KEY, currentMonthStr);
+        saveState();
+      }
+    }
+    checkMonthlyFreeze();
 
     function saveState() {
       try {
@@ -377,7 +390,6 @@
           if (allDoneYesterday) {
             streak += 1;
             history[lastActiveDate] = 'done';
-            if (streak % 7 === 0) freezes += 1;
           } else if (history[lastActiveDate] === 'frozen') {
             // серия сохранена
           } else {
@@ -390,7 +402,9 @@
         habits.forEach(h => h.done = false);
         todayStr = actualToday;
         celebratedToday = false;
+        
         localStorage.setItem(DATE_KEY, todayStr);
+        checkMonthlyFreeze(); 
         saveState();
         renderHabits();
         renderCal();
@@ -402,7 +416,6 @@
     checkDayTransition();
     setInterval(checkDayTransition, 30000);
 
-    // Отрисовка каталога первого входа
     function renderOnboardingScreen() {
       const screen = document.getElementById('onboardingScreen');
       const container = document.getElementById('onboardingCatalog');
@@ -446,6 +459,12 @@
 
       if (habits.length === 0) {
         habits.push({ id: Date.now(), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', done: false, note: '' });
+      }
+
+      // Фиксируем дату регистрации
+      if (!regDate) {
+        regDate = todayStr;
+        localStorage.setItem(REG_DATE_KEY, regDate);
       }
 
       saveState();
@@ -562,26 +581,35 @@
       }
     }
 
-    function useStreakFreeze() {
-      if (freezes <= 0) {
-        alert('Заморозок не осталось!');
-        return;
-      }
+    // НОВАЯ ЛОГИКА ЗАМОРОЗОК (ПОКУПКА И ИСПОЛЬЗОВАНИЕ)
+    function handleFreezeClick() {
       if (history[todayStr] === 'done') {
-        alert('План уже закрыт на 100%!');
+        alert('План уже закрыт на 100%, спасать день не нужно!');
         return;
       }
       if (history[todayStr] === 'frozen') {
-        alert('День уже заморожен.');
+        alert('Этот день уже под защитой заморозки.');
         return;
       }
-      if (confirm('Использовать 1 заморозку?')) {
+
+      if (freezes <= 0) {
+        if (confirm('Бесплатная заморозка в этом месяце исчерпана. Докупить экстренную заморозку за 20 ₽? (максимум 3)')) {
+          // Имитация покупки. В будущем тут будет вызов tg.openInvoice()
+          alert('В разработке: здесь откроется нативное окно оплаты Telegram Stars/ЮKassa. Пока выдаем заморозку тестово!');
+          freezes += 1;
+          saveState();
+          updateProgress();
+        }
+        return;
+      }
+
+      if (confirm(`Использовать 1 заморозку для защиты сегодняшнего дня? (Осталось: ${freezes})`)) {
         freezes -= 1;
         history[todayStr] = 'frozen';
         saveState();
         updateProgress();
         renderCal();
-        alert('🧊 Заморозка активирована!');
+        alert('🧊 Заморозка активирована! Твоя серия в безопасности.');
       }
     }
 
@@ -693,15 +721,21 @@
         const padD = String(d).padStart(2, '0');
         const dateKey = `${year}-${padM}-${padD}`;
 
-        if (history[dateKey] === 'done') c.classList.add('done-100');
-        if (history[dateKey] === 'frozen') c.classList.add('frozen');
+        // Логика скрытия дней ДО регистрации
+        if (regDate && dateKey < regDate) {
+          c.classList.add('pre-reg');
+        } else {
+          if (history[dateKey] === 'done') c.classList.add('done-100');
+          if (history[dateKey] === 'frozen') c.classList.add('frozen');
 
-        if (d === currentDay) {
-          c.classList.add('today');
-        } else if (d > currentDay) {
-          c.classList.add('locked');
-          c.onclick = () => alert('Этот день еще впереди!');
+          if (d === currentDay) {
+            c.classList.add('today');
+          } else if (d > currentDay) {
+            c.classList.add('locked');
+            c.onclick = () => alert('Этот день еще впереди!');
+          }
         }
+        
         g.appendChild(c);
       }
     }
@@ -722,7 +756,6 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    // Инициализация
     if (!habits || habits.length === 0) {
       renderOnboardingScreen();
     } else {
