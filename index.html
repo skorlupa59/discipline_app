@@ -1,551 +1,740 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Discipline OS</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <style>
-    :root {
-      --bg: #0d1117;
-      --card-bg: rgba(22, 27, 34, 0.9);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --accent: #2ea043;
-      --accent-glow: rgba(46, 160, 67, 0.35);
-      --ice: #38bdf8;
-      --text-main: #f0f6fc;
-      --text-muted: #8b949e;
-      --pill-bg: #1f242c;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
-    body { background: radial-gradient(circle at top, #161b22 0%, #0d1117 100%); color: var(--text-main); min-height: 100vh; padding: 16px 16px 96px; overflow-x: hidden; }
-    
-    /* Header */
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .greeting { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-    .user-title { font-size: 20px; font-weight: 700; margin-top: 2px; }
-    .header-badges { display: flex; gap: 6px; align-items: center; }
-    .streak-badge { background: rgba(255, 159, 10, 0.12); border: 1px solid rgba(255, 159, 10, 0.3); padding: 5px 10px; border-radius: 14px; font-weight: 700; font-size: 12px; color: #ff9f0a; display: flex; gap: 4px; align-items: center; }
-    .freeze-badge { background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 10px; border-radius: 14px; font-weight: 700; font-size: 12px; color: var(--ice); display: flex; gap: 4px; align-items: center; cursor: pointer; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Discipline OS</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card-bg: rgba(18, 22, 31, 0.96);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #2ea043;
+      --accent-glow: rgba(46, 160, 67, 0.35);
+      --ice: #38bdf8;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --pill-bg: #161b22;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body { background: radial-gradient(circle at top, #161b26 0%, #0b0e14 100%); color: var(--text-main); min-height: 100vh; padding: 16px 16px calc(96px + env(safe-area-inset-bottom)); overflow-x: hidden; }
+    .app-container { max-width: 480px; margin: 0 auto; width: 100%; }
 
-    /* Views */
-    .view-screen { display: none; }
-    .view-screen.active { display: block; animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .greeting { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .user-title { font-size: 20px; font-weight: 800; margin-top: 2px; }
+    .header-badges { display: flex; gap: 6px; align-items: center; }
+    .streak-badge { background: rgba(255, 159, 10, 0.12); border: 1px solid rgba(255, 159, 10, 0.3); padding: 5px 10px; border-radius: 14px; font-weight: 700; font-size: 12px; color: #ff9f0a; display: flex; gap: 4px; align-items: center; }
+    .freeze-badge { background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 10px; border-radius: 14px; font-weight: 700; font-size: 12px; color: var(--ice); display: flex; gap: 4px; align-items: center; cursor: pointer; }
 
-    .progress-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 16px; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.35); }
-    .progress-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
-    .progress-value { font-size: 24px; font-weight: 800; color: #3fb950; }
-    .bar-bg { height: 9px; width: 100%; background: rgba(255, 255, 255, 0.08); border-radius: 10px; overflow: hidden; }
-    .bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #2ea043, #56d364); border-radius: 10px; transition: width 0.35s ease; box-shadow: 0 0 10px var(--accent-glow); }
+    .view-screen { display: none; }
+    .view-screen.active { display: block; animation: fadeIn 0.16s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 
-    .year-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 14px; margin-bottom: 16px; }
-    .year-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .year-title { font-size: 13px; font-weight: 700; }
-    .year-val { font-size: 12px; color: #3fb950; font-weight: 700; }
+    .progress-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+    .progress-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px; }
+    .progress-value { font-size: 24px; font-weight: 800; color: #3fb950; }
+    .bar-bg { height: 8px; width: 100%; background: rgba(255, 255, 255, 0.08); border-radius: 10px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #2ea043, #56d364); border-radius: 10px; transition: width 0.3s ease; box-shadow: 0 0 10px var(--accent-glow); }
 
-    .section-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .section-title { font-size: 15px; font-weight: 700; }
-    .btn-action-group { display: flex; gap: 6px; }
-    .top-btn { background: #238636; color: #fff; border: none; padding: 6px 11px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
-    .story-btn { background: rgba(255, 255, 255, 0.08); color: #f0f6fc; border: 1px solid var(--card-border); }
+    .year-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 14px; margin-bottom: 14px; }
+    .year-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .year-title { font-size: 13px; font-weight: 700; }
+    .year-val { font-size: 12px; color: #3fb950; font-weight: 700; }
 
-    .habit-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 14px; margin-bottom: 10px; transition: all 0.2s; }
-    .habit-item.done { border-color: rgba(46, 160, 67, 0.4); background: rgba(46, 160, 67, 0.08); }
-    .habit-row { display: flex; justify-content: space-between; align-items: center; }
-    .habit-left { display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; }
-    .habit-icon { font-size: 22px; width: 40px; height: 40px; background: var(--pill-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
-    .habit-name { font-size: 14px; font-weight: 600; }
-    .habit-item.done .habit-name { text-decoration: line-through; color: var(--text-muted); }
-    .habit-sub { font-size: 11px; color: var(--text-muted); }
-    .checkbox-btn { width: 28px; height: 28px; border-radius: 9px; border: 2px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-    .habit-item.done .checkbox-btn { background: #2ea043; border-color: #2ea043; }
+    .section-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section-title { font-size: 15px; font-weight: 700; }
+    .btn-action-group { display: flex; gap: 6px; }
+    .top-btn { background: #238636; color: #fff; border: none; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .story-btn { background: rgba(255, 255, 255, 0.08); color: #f0f6fc; border: 1px solid var(--card-border); }
 
-    .habit-actions-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.04); }
-    .habit-action-link { background: transparent; border: none; color: var(--text-muted); font-size: 11px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
-    .del-btn { color: #f85149; }
+    .habit-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 14px; margin-bottom: 10px; transition: border-color 0.2s, background 0.2s; }
+    .habit-item.done { border-color: rgba(46, 160, 67, 0.4); background: rgba(46, 160, 67, 0.08); }
+    .habit-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .habit-left { display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; min-width: 0; }
+    .habit-icon { font-size: 22px; width: 42px; height: 42px; min-width: 42px; background: var(--pill-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .habit-text-wrap { min-width: 0; flex: 1; }
+    .habit-name { font-size: 14px; font-weight: 600; word-break: break-word; }
+    .habit-item.done .habit-name { text-decoration: line-through; color: var(--text-muted); }
+    .habit-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .checkbox-btn { width: 28px; height: 28px; min-width: 28px; border-radius: 9px; border: 2px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; }
+    .habit-item.done .checkbox-btn { background: #2ea043; border-color: #2ea043; }
 
-    .note-box { display: none; margin-top: 8px; }
-    .note-box.open { display: block; }
-    .note-input { width: 100%; background: #111418; border: 1px solid var(--card-border); color: #fff; padding: 8px; border-radius: 8px; font-size: 12px; resize: none; }
+    .habit-actions-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.04); }
+    .habit-action-link { background: transparent; border: none; color: var(--text-muted); font-size: 11px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+    .del-btn { color: #f85149; }
 
-    .challenge-card { background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), var(--card-bg) 60%); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .invite-btn { background: var(--ice); color: #0b1320; border: none; padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .note-box { display: none; margin-top: 8px; }
+    .note-box.open { display: block; }
+    .note-input { width: 100%; background: #0f131a; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-size: 12px; resize: none; outline: none; }
+    .note-input:focus { border-color: #2ea043; }
 
-    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
-    .day-cell { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; background: rgba(255,255,255,0.04); cursor: pointer; border: 1px solid transparent; }
-    .day-cell.done-100 { background: rgba(46, 160, 67, 0.25); border-color: #2ea043; color: #3fb950; font-weight: 700; }
-    .day-cell.frozen { background: rgba(56, 189, 248, 0.2); border-color: var(--ice); color: var(--ice); }
-    .day-cell.today { border: 2px solid #58a6ff; font-weight: 800; }
-    .day-cell.locked { opacity: 0.25; cursor: not-allowed; border: 1px dashed rgba(255,255,255,0.1); }
+    .challenge-card { background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), var(--card-bg) 60%); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .invite-btn { background: var(--ice); color: #0b1320; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
 
-    /* Modals */
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 200; align-items: flex-end; }
-    .modal.open { display: flex; }
-    .modal-content { background: #161b22; width: 100%; border-radius: 24px 24px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+    .day-cell { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; background: rgba(255,255,255,0.04); cursor: pointer; border: 1px solid transparent; }
+    .day-cell.done-100 { background: rgba(46, 160, 67, 0.25); border-color: #2ea043; color: #3fb950; font-weight: 700; }
+    .day-cell.frozen { background: rgba(56, 189, 248, 0.2); border-color: var(--ice); color: var(--ice); }
+    .day-cell.today { border: 2px solid #58a6ff; font-weight: 800; }
+    .day-cell.locked { opacity: 0.25; cursor: not-allowed; border: 1px dashed rgba(255,255,255,0.1); }
 
-    /* Onboarding Fullscreen */
-    .onboarding-screen { display: none; position: fixed; inset: 0; background: #0d1117; z-index: 300; padding: 24px 16px; overflow-y: auto; }
-    .onboarding-screen.open { display: block; }
-    .catalog-group { margin-bottom: 16px; }
-    .catalog-group-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; margin-bottom: 8px; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.82); backdrop-filter: blur(8px); z-index: 200; align-items: flex-end; justify-content: center; }
+    .modal.open { display: flex; }
+    .modal-content { background: #161b22; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
 
-    .nav-bar { position: fixed; bottom: 12px; left: 16px; right: 16px; height: 60px; background: rgba(22, 27, 34, 0.94); backdrop-filter: blur(20px); border: 1px solid var(--card-border); border-radius: 18px; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
-    .nav-item { color: var(--text-muted); font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; }
-    .nav-item.active { color: #3fb950; }
-  </style>
+    .onboarding-screen { display: none; position: fixed; inset: 0; background: #0b0e14; z-index: 300; padding: 24px 16px; overflow-y: auto; }
+    .onboarding-screen.open { display: block; }
+    .catalog-group { margin-bottom: 16px; }
+    .catalog-group-title { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 700; margin-bottom: 8px; }
+
+    .nav-bar { position: fixed; bottom: calc(12px + env(safe-area-inset-bottom)); left: 0; right: 0; margin: 0 auto; max-width: 480px; width: calc(100% - 32px); height: 60px; background: rgba(22, 27, 34, 0.95); backdrop-filter: blur(20px); border: 1px solid var(--card-border); border-radius: 18px; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+    .nav-item { color: var(--text-muted); font-size: 11px; font-weight: 600; text-align: center; cursor: pointer; flex: 1; padding: 8px 0; }
+    .nav-item.active { color: #3fb950; }
+
+    #storyCard { background: #12161f; border: 1.5px solid #2ea043; border-radius: 18px; padding: 20px; text-align: center; color: #fff; margin: 10px 0; }
+  </style>
 </head>
 <body>
+  <div class="app-container">
 
-  <!-- ONBOARDING MODAL (ПРИВЕТСТВЕННЫЙ ЭКРАН) -->
-  <div class="onboarding-screen" id="onboardingScreen">
-    <div style="text-align: center; margin-bottom: 20px; margin-top: 10px;">
-      <div style="font-size: 32px; margin-bottom: 8px;">⚡</div>
-      <h2 style="font-size: 22px; font-weight: 800;">Добро пожаловать в Discipline OS</h2>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">Выберите ваши первые привычки из каталога для старта личной системы.</p>
-    </div>
+    <!-- ONBOARDING -->
+    <div class="onboarding-screen" id="onboardingScreen">
+      <div style="text-align: center; margin-bottom: 20px; margin-top: 10px;">
+        <div style="font-size: 32px; margin-bottom: 6px;">⚡</div>
+        <h2 style="font-size: 22px; font-weight: 800;">Discipline OS</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Выберите привычки для старта вашей системы.</p>
+      </div>
+      <div id="onboardingCatalog"></div>
+      <button onclick="finishOnboarding()" style="width: 100%; background: #238636; border: none; color: #fff; font-weight: 700; padding: 14px; border-radius: 14px; font-size: 14px; cursor: pointer; position: sticky; bottom: 10px;">
+        Начать свой путь →
+      </button>
+    </div>
 
-    <div id="onboardingCatalog"></div>
+    <!-- HEADER -->
+    <div class="header">
+      <div>
+        <div class="greeting" id="devBadge">Фокус дня</div>
+        <div class="user-title" id="userNameLabel">Discipline OS</div>
+      </div>
+      <div class="header-badges">
+        <div class="freeze-badge" onclick="useStreakFreeze()">
+          <span>🧊</span>
+          <span id="freezeCount">1 шт.</span>
+        </div>
+        <div class="streak-badge">
+          <span>🔥</span>
+          <span id="streakDays">0 дней</span>
+        </div>
+      </div>
+    </div>
 
-    <button onclick="finishOnboarding()" style="width: 100%; background: #238636; border: none; color: #fff; font-weight: 700; padding: 14px; border-radius: 14px; font-size: 14px; cursor: pointer; position: sticky; bottom: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);">
-      Начать свой путь →
-    </button>
-  </div>
+    <!-- TODAY -->
+    <div id="view-today" class="view-screen active">
+      <div class="challenge-card">
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">👥 Совместный фокус</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Держи дисциплину вместе с другом</div>
+        </div>
+        <button class="invite-btn" onclick="inviteFriend()">Позвать друга</button>
+      </div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <div>
-      <div class="greeting" id="devBadge">Фокус дня</div>
-      <div class="user-title" id="userNameLabel">Discipline OS ✨</div>
-    </div>
-    <div class="header-badges">
-      <div class="freeze-badge" onclick="useStreakFreeze()">
-        <span>🧊</span>
-        <span id="freezeCount">1 шт.</span>
-      </div>
-      <div class="streak-badge">
-        <span>🔥</span>
-        <span id="streakDays">0 дней</span>
-      </div>
-    </div>
-  </div>
+      <div class="progress-card">
+        <div class="progress-top">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted);">Дневной план</div>
+            <div style="font-size: 13px; margin-top:2px;" id="countLabel">0 из 0 закрыто</div>
+          </div>
+          <div class="progress-value" id="pctLabel">0%</div>
+        </div>
+        <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
+      </div>
 
-  <!-- VIEW 1: TODAY -->
-  <div id="view-today" class="view-screen active">
-    
-    <div class="challenge-card">
-      <div>
-        <div style="font-size: 13px; font-weight: 700;">👥 Совместный фокус</div>
-        <div style="font-size: 11px; color: var(--text-muted);">Держи дисциплину вместе с другом</div>
-      </div>
-      <button class="invite-btn" onclick="inviteFriend()">Позвать друга</button>
-    </div>
+      <div class="section-bar">
+        <div class="section-title">Твои привычки</div>
+        <div class="btn-action-group">
+          <button class="top-btn story-btn" onclick="openStoriesModal()">📸 Stories</button>
+          <button class="top-btn" onclick="openAddModal()">+ Добавить</button>
+        </div>
+      </div>
 
-    <div class="progress-card">
-      <div class="progress-top">
-        <div>
-          <div style="font-size: 12px; color: var(--text-muted);">Дневной план</div>
-          <div style="font-size: 13px; margin-top:2px;" id="countLabel">0 из 0 закрыто</div>
-        </div>
-        <div class="progress-value" id="pctLabel">0%</div>
-      </div>
-      <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
-    </div>
+      <div id="habitsList"></div>
+    </div>
 
-    <div class="section-bar">
-      <div class="section-title">Твои привычки</div>
-      <div class="btn-action-group">
-        <button class="top-btn story-btn" onclick="openStoriesModal()">📸 Stories</button>
-        <button class="top-btn" onclick="openAddModal()">+ Добавить</button>
-      </div>
-    </div>
+    <!-- CALENDAR -->
+    <div id="view-cal" class="view-screen">
+      <div class="year-card">
+        <div class="year-top">
+          <div class="year-title">📅 Годовая серия</div>
+          <div class="year-val" id="yearProgressLabel">День 0 из 365 (0%)</div>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill" id="yearBarFill" style="width: 0%;"></div>
+        </div>
+      </div>
+      <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;" id="calMonthTitle">Календарь</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Зелёный = 100% плана. Голубой = заморозка серии.</div>
+      <div class="days-grid" id="calGrid"></div>
+    </div>
 
-    <div id="habitsList"></div>
-  </div>
+    <!-- PRO -->
+    <div id="view-pro" class="view-screen">
+      <div style="background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.15), var(--card-bg) 65%); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; padding: 20px; text-align: center;">
+        <div id="proCardBadge" style="font-size: 11px; font-weight: 800; color: #fbbf24; letter-spacing: 1px;">ТАРИФНЫЕ ПЛАНЫ</div>
+        <div style="font-size: 20px; font-weight: 800; margin: 6px 0;">Выбери уровень</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Безлимит привычек и расширенный контроль.</div>
+        <div id="tierListBlock">
+          <div style="border: 1px solid #fbbf24; background: rgba(245, 158, 11, 0.08); border-radius: 14px; padding: 12px; margin-top: 12px; text-align: left;">
+            <div style="display:flex; justify-content:space-between; font-weight:700;">
+              <span>👑 Discipline MAX</span><span style="color:#3fb950;">250 ₽ / мес</span>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Безлимит привычек • Авто-защита серий</div>
+          </div>
+          <button onclick="alert('Оплата через Stars будет доступна в следующем релизе!')" style="width:100%; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; color:#fff; font-weight:700; padding:14px; border-radius:14px; margin-top:16px; font-size:14px; cursor:pointer;">
+            Подключить
+          </button>
+        </div>
+      </div>
+    </div>
 
-  <!-- VIEW 2: CALENDAR -->
-  <div id="view-cal" class="view-screen">
-    <div class="year-card">
-      <div class="year-top">
-        <div class="year-title">📅 Годовая серия</div>
-        <div class="year-val" id="yearProgressLabel">День 0 из 365 (0%)</div>
-      </div>
-      <div class="bar-bg">
-        <div class="bar-fill" id="yearBarFill" style="width: 0%;"></div>
-      </div>
-    </div>
+    <!-- MODAL: ADD -->
+    <div class="modal" id="addModal">
+      <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-weight:700; font-size:16px;">Каталог привычек</div>
+          <button onclick="closeModal('addModal')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;" id="modalCatalogList"></div>
+        <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--card-border);">
+          <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Своя привычка:</div>
+          <input type="text" id="customName" maxlength="35" placeholder="Например: Чтение 30 минут..." style="width:100%; background:#0f131a; border:1px solid var(--card-border); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" />
+          <button onclick="addCustomHabit()" style="width:100%; background:#238636; border:none; color:#fff; padding:10px; border-radius:10px; font-weight:600; cursor:pointer;">Добавить в трекер</button>
+        </div>
+      </div>
+    </div>
 
-    <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;" id="calMonthTitle">Календарь</div>
-    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">История сохраняется автоматически. Будущие дни заблокированы.</div>
-    <div class="days-grid" id="calGrid"></div>
-  </div>
+    <!-- MODAL: STORIES -->
+    <div class="modal" id="storiesModal">
+      <div class="modal-content" style="text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-weight:700; font-size:16px;">Поделиться прогрессом</div>
+          <button onclick="closeModal('storiesModal')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div id="storyCard">
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted);">DISCIPLINE OS</div>
+          <div style="font-size:34px; margin:8px 0;">⚡</div>
+          <div style="font-size:20px; font-weight:800;" id="storyUserName">Лидер</div>
+          <div style="font-size:13px; color:#3fb950; margin-top:4px;" id="storyStreakText">Серия: 0 дней</div>
+          <div style="margin-top:12px; font-size:11px; color:var(--text-muted); line-height:1.4;">«Дисциплина — это решение делать то, чего не хочется делать, чтобы достичь того, чего очень хочется достичь.»</div>
+        </div>
+        <button onclick="shareStoryNative()" style="width:100%; background:#238636; border:none; color:#fff; padding:12px; border-radius:12px; font-weight:700; margin-top:10px; cursor:pointer;">Отправить в Telegram</button>
+      </div>
+    </div>
 
-  <!-- VIEW 3: PRO PAYWALL -->
-  <div id="view-pro" class="view-screen">
-    <div style="background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.15), var(--card-bg) 65%); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; padding: 20px; text-align: center;">
-      <div id="proCardBadge" style="font-size: 11px; font-weight: 800; color: #fbbf24; letter-spacing: 1px;">ТАРИФНЫЕ ПЛАНЫ</div>
-      <div id="proCardTitle" style="font-size: 20px; font-weight: 800; margin: 6px 0;">Выбери уровень</div>
-      <div id="proCardDesc" style="font-size: 12px; color: var(--text-muted);">Безлимит привычек и расширенный контроль.</div>
+    <!-- NAVIGATION -->
+    <div class="nav-bar">
+      <div class="nav-item active" onclick="tab('today', this)"><div>⚡</div><div>Сегодня</div></div>
+      <div class="nav-item" onclick="tab('cal', this)"><div>📅</div><div>Календарь</div></div>
+      <div class="nav-item" onclick="tab('pro', this)"><div>⭐</div><div id="proTabTitle">Тарифы</div></div>
+    </div>
 
-      <div id="tierListBlock">
-        <div style="border: 1px solid #fbbf24; background: rgba(245, 158, 11, 0.08); border-radius: 14px; padding: 12px; margin-top: 12px; text-align: left;">
-          <div style="display:flex; justify-content:space-between; font-weight:700;">
-            <span>👑 Discipline MAX</span><span style="color:#3fb950;">250 ₽ / мес</span>
-          </div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Безлимит привычек • Фокус-таймер • Авто-защита серий</div>
-        </div>
-        <button onclick="alert('Оплата через Telegram Stars подключена!')" style="width:100%; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; color:#fff; font-weight:700; padding:14px; border-radius:14px; margin-top:16px; font-size:14px; cursor:pointer;">
-          Подключить
-        </button>
-      </div>
-    </div>
-  </div>
+  </div>
 
-  <!-- MODAL: ADD HABIT -->
-  <div class="modal" id="addModal">
-    <div class="modal-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <div style="font-weight:700; font-size:16px;">Каталог привычек</div>
-        <button onclick="closeModal('addModal')" style="background:none; border:none; color:#fff; font-size:18px;">✕</button>
-      </div>
-      <div style="display:flex; flex-direction:column; gap:8px;" id="modalCatalogList"></div>
-
-      <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--card-border);">
-        <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Своя привычка:</div>
-        <input type="text" id="customName" placeholder="Например: Чтение 30 минут..." style="width:100%; background:#111418; border:1px solid var(--card-border); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" />
-        <button onclick="addCustomHabit()" style="width:100%; background:#238636; border:none; color:#fff; padding:10px; border-radius:10px; font-weight:600; cursor:pointer;">Добавить в трекер</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- NAVIGATION -->
-  <div class="nav-bar">
-    <div class="nav-item active" onclick="tab('today', this)"><div>⚡</div><div>Сегодня</div></div>
-    <div class="nav-item" onclick="tab('cal', this)"><div>📅</div><div>Календарь</div></div>
-    <div class="nav-item" onclick="tab('pro', this)"><div>⭐</div><div id="proTabTitle">Тарифы</div></div>
-  </div>
-
-  <script>
-    // -------------------------------------------------------------
-    // РАЗРАБОТЧИКИ (НИКИ В TELEGRAM БЕЗ @)
-    // -------------------------------------------------------------
-    const DEV_TELEGRAM_USERNAMES = ['egorbai59', 'tester_alex']; 
+  <script>
+    const BOT_USERNAME = 'titan_disciplin_bot'; // Укажите юзернейм вашего бота
+    const DEV_TELEGRAM_USERNAMES = ['egorbai59'];
     const DEV_TELEGRAM_IDS = [938527107];
 
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+        if (tg.setHeaderColor) tg.setHeaderColor('#0b0e14');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#0b0e14');
+      } catch (e) {}
+    }
 
-    const currentTgUser = tg?.initDataUnsafe?.user;
-    const userId = currentTgUser?.id ? currentTgUser.id : 'guest';
-    const isDev = currentTgUser && (
-      DEV_TELEGRAM_USERNAMES.includes(currentTgUser.username) ||
-      DEV_TELEGRAM_IDS.includes(currentTgUser.id)
-    );
+    const currentTgUser = tg?.initDataUnsafe?.user;
+    
+    // Получение стойкого ID пользователя
+    function getUserId() {
+      if (currentTgUser?.id) return String(currentTgUser.id);
+      let localId = localStorage.getItem('disc_anon_uuid');
+      if (!localId) {
+        localId = 'usr_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('disc_anon_uuid', localId);
+      }
+      return localId;
+    }
 
-    const maxAllowed = isDev ? 999 : 3;
+    const userId = getUserId();
+    const isDev = currentTgUser && DEV_TELEGRAM_USERNAMES.includes(currentTgUser.username);
+    const maxAllowed = isDev ? 999 : 3;
 
-    if (isDev) {
-      document.getElementById('devBadge').innerText = '👑 CREATOR ACCESS';
-      document.getElementById('devBadge').style.color = '#fbbf24';
-      document.getElementById('proTabTitle').innerText = 'Max Status';
-      document.getElementById('proCardBadge').innerText = 'РЕЖИМ СОЗДАТЕЛЯ';
-      document.getElementById('proCardTitle').innerText = 'Discipline MAX активен';
-      document.getElementById('proCardDesc').innerText = 'Вам доступны все возможности без ограничений.';
-      document.getElementById('tierListBlock').style.display = 'none';
-    }
+    if (isDev) {
+      document.getElementById('devBadge').innerText = '👑 CREATOR ACCESS';
+      document.getElementById('devBadge').style.color = '#fbbf24';
+      document.getElementById('proTabTitle').innerText = 'Max Status';
+      document.getElementById('tierListBlock').innerHTML = '<div style="color:#3fb950; font-weight:700; padding:12px;">Вам активирован пожизненный статус Создателя.</div>';
+    }
 
-    if (currentTgUser?.first_name) {
-      document.getElementById('userNameLabel').innerText = `${currentTgUser.first_name} ✨`;
-    }
+    if (currentTgUser?.first_name) {
+      document.getElementById('userNameLabel').innerText = currentTgUser.first_name;
+      document.getElementById('storyUserName').innerText = currentTgUser.first_name;
+    }
 
-    // ПОЛНЫЙ АССОРТИМЕНТ ПРИВЫЧЕК
-    const FULL_CATALOG = [
-      { category: 'Спорт и тело', items: [
-        { icon: '🏃', name: 'Бег / Кардио', sub: '20-30 минут' },
-        { icon: '🏋️', name: 'Силовая тренировка', sub: 'Зал или домашний воркаут' },
-        { icon: '💧', name: 'Норма воды', sub: '2 литра чистой воды' },
-        { icon: '🧘', name: 'Растяжка / Зарядка', sub: '15 минут с утра' }
-      ]},
-      { category: 'Фокус и навыки', items: [
-        { icon: '🎬', name: 'Практика монтажа', sub: '1 час в Premiere / AE' },
-        { icon: '📖', name: 'Чтение книги', sub: '20 страниц профильной литературы' },
-        { icon: '💻', name: 'Кодинг / Разработка', sub: '1 час непрерывной практики' },
-        { icon: '🇬🇧', name: 'Английский язык', sub: 'Урок или 30 новых слов' }
-      ]},
-      { category: 'Дисциплина и разум', items: [
-        { icon: '📵', name: 'Цифровой детокс', sub: 'Без соцсетей первый час дня' },
-        { icon: '🌙', name: 'Режим сна', sub: 'Отбой до 23:30' },
-        { icon: '📝', name: 'Вечерние итоги', sub: 'План на завтра в блокноте' }
-      ]}
-    ];
+    const FULL_CATALOG = [
+      { category: 'Спорт и тело', items: [
+        { icon: '🏃', name: 'Бег / Кардио', sub: '20-30 минут' },
+        { icon: '🏋️', name: 'Силовая тренировка', sub: 'Зал или воркаут' },
+        { icon: '💧', name: 'Норма воды', sub: '2 литра воды' },
+        { icon: '🧘', name: 'Зарядка / Растяжка', sub: '15 минут с утра' }
+      ]},
+      { category: 'Фокус и навыки', items: [
+        { icon: '🎬', name: 'Практика монтажа', sub: '1 час в Premiere / AE' },
+        { icon: '📖', name: 'Чтение книги', sub: '20 страниц литературы' },
+        { icon: '💻', name: 'Кодинг / Разработка', sub: '1 час практики' },
+        { icon: '🇬🇧', name: 'Английский язык', sub: 'Урок или 30 новых слов' }
+      ]},
+      { category: 'Дисциплина и разум', items: [
+        { icon: '📵', name: 'Цифровой детокс', sub: 'Без соцсетей утром' },
+        { icon: '🌙', name: 'Режим сна', sub: 'Отбой до 23:30' },
+        { icon: '📝', name: 'Вечерние итоги', sub: 'План на завтра' }
+      ]}
+    ];
 
-    // ИЗОЛИРОВАННЫЕ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
-    const STORAGE_KEY = `discipline_habits_${userId}`;
-    const ONBOARDING_KEY = `discipline_onboarding_${userId}`;
+    const STORAGE_KEY = `disc_habits_${userId}`;
+    const STREAK_KEY = `disc_streak_${userId}`;
+    const FREEZES_KEY = `disc_freezes_${userId}`;
+    const DATE_KEY = `disc_last_date_${userId}`;
+    const HISTORY_KEY = `disc_history_${userId}`;
 
-    let habits = JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
-    let streak = parseInt(localStorage.getItem(`discipline_streak_${userId}`) || '0', 10);
-    let freezes = parseInt(localStorage.getItem(`discipline_freezes_${userId}`) || '1', 10);
+    function safeJsonParse(key, fallback) {
+      try {
+        const val = localStorage.getItem(key);
+        return val ? JSON.parse(val) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
 
-    function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
-      localStorage.setItem(`discipline_streak_${userId}`, streak);
-      localStorage.setItem(`discipline_freezes_${userId}`, freezes);
-    }
+    let habits = safeJsonParse(STORAGE_KEY, null);
+    let streak = parseInt(localStorage.getItem(STREAK_KEY) || '0', 10);
+    let freezes = parseInt(localStorage.getItem(FREEZES_KEY) || '1', 10);
+    let history = safeJsonParse(HISTORY_KEY, {});
 
-    // Проверка первого входа
-    if (!localStorage.getItem(ONBOARDING_KEY) || !habits) {
-      renderOnboardingScreen();
-    } else {
-      renderHabits();
-    }
+    function getLocalDateString(d = new Date()) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
-    function renderOnboardingScreen() {
-      const screen = document.getElementById('onboardingScreen');
-      const container = document.getElementById('onboardingCatalog');
-      container.innerHTML = '';
+    let todayStr = getLocalDateString();
+    let celebratedToday = false;
 
-      FULL_CATALOG.forEach((group, gIdx) => {
-        let groupHtml = `<div class="catalog-group"><div class="catalog-group-title">${group.category}</div>`;
-        group.items.forEach((item, iIdx) => {
-          groupHtml += `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#161b22; border:1px solid var(--card-border); padding:10px 14px; border-radius:12px; margin-bottom:8px;">
-              <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:20px;">${item.icon}</span>
-                <div>
-                  <div style="font-size:13px; font-weight:600;">${item.name}</div>
-                  <div style="font-size:11px; color:var(--text-muted);">${item.sub}</div>
-                </div>
-              </div>
-              <input type="checkbox" data-g="${gIdx}" data-i="${iIdx}" class="onboard-chk" style="width:20px; height:20px; accent-color:#2ea043; cursor:pointer;" />
-            </div>
-          `;
-        });
-        groupHtml += `</div>`;
-        container.innerHTML += groupHtml;
-      });
+    // Сверка смены суток
+    function checkDayTransition() {
+      const actualToday = getLocalDateString();
+      const lastActiveDate = localStorage.getItem(DATE_KEY);
 
-      screen.classList.add('open');
-    }
+      if (habits && lastActiveDate && lastActiveDate !== actualToday) {
+        const lastParts = lastActiveDate.split('-').map(Number);
+        const currParts = actualToday.split('-').map(Number);
+        const lastD = new Date(lastParts[0], lastParts[1] - 1, lastParts[2]);
+        const currD = new Date(currParts[0], currParts[1] - 1, currParts[2]);
+        const diffDays = Math.round((currD - lastD) / 86400000);
 
-    function finishOnboarding() {
-      const checkedBoxes = document.querySelectorAll('.onboard-chk:checked');
-      habits = [];
+        if (diffDays === 1) {
+          const allDoneYesterday = habits.length > 0 && habits.every(h => h.done);
+          if (allDoneYesterday) {
+            streak += 1;
+            history[lastActiveDate] = 'done';
+            if (streak % 7 === 0) freezes += 1;
+          } else if (history[lastActiveDate] === 'frozen') {
+            // серия сохранена заморозкой
+          } else {
+            streak = 0;
+          }
+        } else if (diffDays > 1) {
+          if (history[lastActiveDate] !== 'frozen') streak = 0;
+        }
 
-      checkedBoxes.forEach(chk => {
-        const g = chk.getAttribute('data-g');
-        const i = chk.getAttribute('data-i');
-        const item = FULL_CATALOG[g].items[i];
-        habits.push({ id: Date.now() + Math.random(), icon: item.icon, name: item.name, sub: item.sub, done: false, note: '' });
-      });
+        habits.forEach(h => h.done = false);
+        todayStr = actualToday;
+        celebratedToday = false;
+        localStorage.setItem(DATE_KEY, todayStr);
+        saveState();
+        renderHabits();
+        renderCal();
+      } else if (!lastActiveDate) {
+        localStorage.setItem(DATE_KEY, actualToday);
+      }
+    }
 
-      if (habits.length === 0) {
-        // Дефолтная привычка, если ничего не выбрал
-        habits.push({ id: Date.now(), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', done: false, note: '' });
-      }
+    checkDayTransition();
+    setInterval(checkDayTransition, 30000); // Проверка каждые 30 секунд
 
-      localStorage.setItem(ONBOARDING_KEY, 'done');
-      saveState();
-      document.getElementById('onboardingScreen').classList.remove('open');
-      renderHabits();
-    }
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+        localStorage.setItem(STREAK_KEY, streak);
+        localStorage.setItem(FREEZES_KEY, freezes);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      } catch (e) {}
+    }
 
-    function renderHabits() {
-      const el = document.getElementById('habitsList');
-      el.innerHTML = '';
-      if (!habits || habits.length === 0) {
-        el.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px;">Список пуст. Нажмите «+ Добавить», чтобы выбрать привычки.</div>';
-        updateProgress();
-        return;
-      }
+    if (!habits) {
+      renderOnboardingScreen();
+    } else {
+      renderHabits();
+    }
 
-      habits.forEach(h => {
-        el.innerHTML += `
-          <div class="habit-item ${h.done ? 'done' : ''}">
-            <div class="habit-row">
-              <div class="habit-left" onclick="toggle(${h.id})">
-                <div class="habit-icon">${h.icon}</div>
-                <div>
-                  <div class="habit-name">${h.name}</div>
-                  <div class="habit-sub">${h.sub}</div>
-                </div>
-              </div>
-              <div class="checkbox-btn" onclick="toggle(${h.id})">
-                ${h.done ? '✓' : ''}
-              </div>
-            </div>
-            <div class="habit-actions-row">
-              <button class="habit-action-link" onclick="toggleNoteBox(${h.id})">
-                📝 ${h.note ? 'Заметка сохранена' : 'Добавить заметку'}
-              </button>
-              <button class="habit-action-link del-btn" onclick="deleteHabit(${h.id})">
-                ✕ Удалить
-              </button>
-            </div>
-            <div class="note-box ${h.note ? 'open' : ''}" id="box-${h.id}">
-              <textarea class="note-input" placeholder="Как прошла сессия?" onchange="saveNote(${h.id}, this.value)">${h.note}</textarea>
-            </div>
-          </div>
-        `;
-      });
-      updateProgress();
-    }
+    function renderOnboardingScreen() {
+      const screen = document.getElementById('onboardingScreen');
+      const container = document.getElementById('onboardingCatalog');
+      container.innerHTML = '';
 
-    function toggle(id) {
-      const h = habits.find(x => x.id === id);
-      if (h) {
-        h.done = !h.done;
-        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        saveState();
-        renderHabits();
-      }
-    }
+      FULL_CATALOG.forEach((group, gIdx) => {
+        let groupHtml = `<div class="catalog-group"><div class="catalog-group-title">${group.category}</div>`;
+        group.items.forEach((item, iIdx) => {
+          groupHtml += `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#12161f; border:1px solid var(--card-border); padding:10px 14px; border-radius:12px; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:20px;">${item.icon}</span>
+                <div>
+                  <div style="font-size:13px; font-weight:600;">${escapeHtml(item.name)}</div>
+                  <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(item.sub)}</div>
+                </div>
+              </div>
+              <input type="checkbox" data-g="${gIdx}" data-i="${iIdx}" class="onboard-chk" style="width:20px; height:20px; accent-color:#2ea043; cursor:pointer;" />
+            </div>
+          `;
+        });
+        groupHtml += `</div>`;
+        container.innerHTML += groupHtml;
+      });
 
-    function deleteHabit(id) {
-      if (confirm('Удалить эту привычку?')) {
-        habits = habits.filter(x => x.id !== id);
-        saveState();
-        renderHabits();
-      }
-    }
+      screen.classList.add('open');
+    }
 
-    function toggleNoteBox(id) {
-      const b = document.getElementById(`box-${id}`);
-      b.classList.toggle('open');
-    }
+    function finishOnboarding() {
+      const checkedBoxes = document.querySelectorAll('.onboard-chk:checked');
+      habits = [];
 
-    function saveNote(id, txt) {
-      const h = habits.find(x => x.id === id);
-      if (h) {
-        h.note = txt;
-        saveState();
-      }
-    }
+      checkedBoxes.forEach(chk => {
+        const g = chk.getAttribute('data-g');
+        const i = chk.getAttribute('data-i');
+        const item = FULL_CATALOG[g].items[i];
+        if (!habits.some(h => h.name === item.name)) {
+          habits.push({ id: Date.now() + Math.random(), icon: item.icon, name: item.name, sub: item.sub, done: false, note: '' });
+        }
+      });
 
-    function updateProgress() {
-      const done = habits ? habits.filter(h => h.done).length : 0;
-      const total = habits ? habits.length : 0;
-      const pct = total ? Math.round((done / total) * 100) : 0;
-      document.getElementById('countLabel').innerText = `${done} из ${total} закрыто`;
-      document.getElementById('pctLabel').innerText = `${pct}%`;
-      document.getElementById('barFill').style.width = `${pct}%`;
-      document.getElementById('freezeCount').innerText = `${freezes} шт.`;
-      document.getElementById('streakDays').innerText = `${streak} дней`;
+      if (habits.length === 0) {
+        habits.push({ id: Date.now(), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', done: false, note: '' });
+      }
 
-      const yearPct = ((streak / 365) * 100).toFixed(1);
-      document.getElementById('yearProgressLabel').innerText = `День ${streak} из 365 (${yearPct}%)`;
-      document.getElementById('yearBarFill').style.width = `${yearPct}%`;
+      saveState();
+      document.getElementById('onboardingScreen').classList.remove('open');
+      renderHabits();
+    }
 
-      if (pct === 100 && total > 0 && window.confetti) confetti({ particleCount: 70, spread: 60 });
-    }
+    function renderHabits() {
+      const el = document.getElementById('habitsList');
+      el.innerHTML = '';
+      if (!habits || habits.length === 0) {
+        el.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px;">Список пуст. Нажмите «+ Добавить», чтобы выбрать привычки.</div>';
+        updateProgress();
+        return;
+      }
 
-    // ПОДЕЛИТЬСЯ С ДРУГОМ (ИСПРАВЛЕНО)
-    function inviteFriend() {
-      const botUser = tg?.initDataUnsafe?.bot?.username || 'skorlupa_app_bot';
-      const text = encodeURIComponent('Привет! Я качаю личную дисциплину в Discipline OS. Заходи тоже:');
-      const shareUrl = `https://t.me/share/url?url=https://t.me/${botUser}&text=${text}`;
+      habits.forEach(h => {
+        el.innerHTML += `
+          <div class="habit-item ${h.done ? 'done' : ''}">
+            <div class="habit-row">
+              <div class="habit-left" onclick="toggle(${h.id})">
+                <div class="habit-icon">${h.icon}</div>
+                <div class="habit-text-wrap">
+                  <div class="habit-name">${escapeHtml(h.name)}</div>
+                  <div class="habit-sub">${escapeHtml(h.sub)}</div>
+                </div>
+              </div>
+              <div class="checkbox-btn" onclick="toggle(${h.id})">
+                ${h.done ? '✓' : ''}
+              </div>
+            </div>
+            <div class="habit-actions-row">
+              <button class="habit-action-link" onclick="toggleNoteBox(${h.id})">
+                📝 <span id="note-lbl-${h.id}">${h.note ? 'Заметка сохранена' : '+ Заметка'}</span>
+              </button>
+              <button class="habit-action-link del-btn" onclick="deleteHabit(${h.id})">
+                ✕ Удалить
+              </button>
+            </div>
+            <div class="note-box ${h.note ? 'open' : ''}" id="box-${h.id}">
+              <textarea class="note-input" id="area-${h.id}" placeholder="Заметка к привычке..." oninput="saveNote(${h.id}, this.value)"></textarea>
+            </div>
+          </div>
+        `;
+      });
 
-      if (tg?.openTelegramLink) {
-        tg.openTelegramLink(shareUrl);
-      } else {
-        window.open(shareUrl, '_blank');
-      }
-    }
+      // Безопасная установка текста заметок через свойство value
+      habits.forEach(h => {
+        const area = document.getElementById(`area-${h.id}`);
+        if (area) area.value = h.note || '';
+      });
 
-    // КАТАЛОГ ДЛЯ ДОБАВЛЕНИЯ
-    function openAddModal() {
-      const cl = document.getElementById('modalCatalogList');
-      cl.innerHTML = '';
-      FULL_CATALOG.forEach(group => {
-        group.items.forEach(item => {
-          cl.innerHTML += `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#111418; padding:8px 12px; border-radius:10px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span>${item.icon}</span>
-                <div>
-                  <div style="font-size:12px; font-weight:600;">${item.name}</div>
-                  <div style="font-size:10px; color:var(--text-muted);">${item.sub}</div>
-                </div>
-              </div>
-              <button onclick="addSingleHabit('${item.icon}', '${item.name}', '${item.sub}')" style="background:#30363d; border:none; color:#fff; font-size:11px; padding:5px 10px; border-radius:8px; cursor:pointer;">+ Взять</button>
-            </div>
-          `;
-        });
-      });
-      document.getElementById('addModal').classList.add('open');
-    }
+      updateProgress();
+    }
 
-    function addSingleHabit(icon, name, sub) {
-      if (habits.length >= maxAllowed) {
-        closeModal('addModal');
-        tab('pro', document.querySelectorAll('.nav-item')[2]);
-        alert('В тарифе Free доступно до 3 привычек. Для безлимита подключите тариф Max.');
-        return;
-      }
-      habits.push({ id: Date.now(), icon: icon, name: name, sub: sub, done: false, note: '' });
-      saveState();
-      closeModal('addModal');
-      renderHabits();
-    }
+    let isToggling = false;
+    function toggle(id) {
+      if (isToggling) return;
+      isToggling = true;
+      setTimeout(() => { isToggling = false; }, 80);
 
-    function addCustomHabit() {
-      const val = document.getElementById('customName').value.trim();
-      if (!val) return;
-      if (habits.length >= maxAllowed) {
-        closeModal('addModal');
-        tab('pro', document.querySelectorAll('.nav-item')[2]);
-        alert('В тарифе Free доступно до 3 привычек.');
-        return;
-      }
-      habits.push({ id: Date.now(), icon: '🎯', name: val, sub: 'Личная цель', done: false, note: '' });
-      document.getElementById('customName').value = '';
-      saveState();
-      closeModal('addModal');
-      renderHabits();
-    }
+      const h = habits.find(x => x.id === id);
+      if (h) {
+        h.done = !h.done;
+        try {
+          if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        } catch(e) {}
+        saveState();
+        renderHabits();
+      }
+    }
 
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function deleteHabit(id) {
+      if (confirm('Удалить привычку?')) {
+        habits = habits.filter(x => x.id !== id);
+        saveState();
+        renderHabits();
+      }
+    }
 
-    // ЧЕСТНЫЙ КАЛЕНДАРЬ БЕЗ ФЕЙКОВЫХ ДНЕЙ
-    function renderCal() {
-      const g = document.getElementById('calGrid');
-      g.innerHTML = '';
-      const now = new Date();
-      const currentDay = now.getDate();
-      const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
-      document.getElementById('calMonthTitle').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    function toggleNoteBox(id) {
+      document.getElementById(`box-${id}`).classList.toggle('open');
+    }
 
-      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    function saveNote(id, txt) {
+      const h = habits.find(x => x.id === id);
+      if (h) {
+        h.note = txt.slice(0, 300);
+        saveState();
+        const lbl = document.getElementById(`note-lbl-${id}`);
+        if (lbl) lbl.innerText = h.note ? 'Заметка сохранена' : '+ Заметка';
+      }
+    }
 
-      for (let d = 1; d <= daysInMonth; d++) {
-        const c = document.createElement('div');
-        c.className = 'day-cell';
-        c.innerText = d;
+    function updateProgress() {
+      const done = habits ? habits.filter(h => h.done).length : 0;
+      const total = habits ? habits.length : 0;
+      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
-        if (d === currentDay) {
-          c.classList.add('today');
-        } else if (d > currentDay) {
-          c.classList.add('locked');
-          c.onclick = () => alert('Этот день еще не наступил!');
-        }
-        g.appendChild(c);
-      }
-    }
+      document.getElementById('countLabel').innerText = `${done} из ${total} закрыто`;
+      document.getElementById('pctLabel').innerText = `${pct}%`;
+      document.getElementById('barFill').style.width = `${pct}%`;
+      document.getElementById('freezeCount').innerText = `${freezes} шт.`;
+      document.getElementById('streakDays').innerText = `${streak} дней`;
+      document.getElementById('storyStreakText').innerText = `Серия: ${streak} дней (${pct}% сегодня)`;
 
-    function tab(name, el) {
-      if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
-      document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      document.getElementById(`view-${name}`).classList.add('active');
-      el.classList.add('active');
-    }
+      const yearPct = Math.min(((streak / 365) * 100), 100).toFixed(1);
+      document.getElementById('yearProgressLabel').innerText = `День ${streak} из 365 (${yearPct}%)`;
+      document.getElementById('yearBarFill').style.width = `${yearPct}%`;
 
-    renderCal();
-  </script>
+      if (pct === 100 && total > 0) {
+        history[todayStr] = 'done';
+        saveState();
+        if (!celebratedToday) {
+          celebratedToday = true;
+          try {
+            if (window.confetti) confetti({ particleCount: 60, spread: 60 });
+          } catch(e) {}
+        }
+      } else if (history[todayStr] === 'done') {
+        delete history[todayStr];
+        celebratedToday = false;
+        saveState();
+      }
+    }
+
+    function useStreakFreeze() {
+      if (freezes <= 0) {
+        alert('Заморозок не осталось! Они начисляются каждые 7 дней непрерывного стрика.');
+        return;
+      }
+      if (history[todayStr] === 'done') {
+        alert('Сегодняшний план закрыт на 100%, заморозка не требуется!');
+        return;
+      }
+      if (history[todayStr] === 'frozen') {
+        alert('Этот день уже под защитой заморозки.');
+        return;
+      }
+      if (confirm('Использовать 1 заморозку для защиты сегодняшнего дня?')) {
+        freezes -= 1;
+        history[todayStr] = 'frozen';
+        saveState();
+        updateProgress();
+        renderCal();
+        alert('🧊 Заморозка активирована! Серия в безопасности.');
+      }
+    }
+
+    function inviteFriend() {
+      const shareUrl = `https://t.me/share/url?url=https://t.me/${BOT_USERNAME}&text=${encodeURIComponent('Держи личную дисциплину со мной в Discipline OS:')}`;
+      if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+      else window.open(shareUrl, '_blank');
+    }
+
+    function openStoriesModal() { openModal('storiesModal'); }
+
+    function shareStoryNative() {
+      const text = encodeURIComponent(`Я держу дисциплину в Discipline OS уже ${streak} дней подряд! Присоединяйся: https://t.me/${BOT_USERNAME}`);
+      const shareUrl = `https://t.me/share/url?url=&text=${text}`;
+      if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+      else window.open(shareUrl, '_blank');
+      closeModal('storiesModal');
+    }
+
+    function openAddModal() {
+      const cl = document.getElementById('modalCatalogList');
+      cl.innerHTML = '';
+      FULL_CATALOG.forEach(group => {
+        group.items.forEach(item => {
+          const alreadyAdded = habits && habits.some(h => h.name === item.name);
+          cl.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#111418; padding:8px 12px; border-radius:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>${item.icon}</span>
+                <div>
+                  <div style="font-size:12px; font-weight:600;">${escapeHtml(item.name)}</div>
+                  <div style="font-size:10px; color:var(--text-muted);">${escapeHtml(item.sub)}</div>
+                </div>
+              </div>
+              <button ${alreadyAdded ? 'disabled' : ''} onclick="addSingleHabit('${item.icon}', '${escapeHtml(item.name)}', '${escapeHtml(item.sub)}')" style="background:${alreadyAdded ? '#21262d' : '#30363d'}; color:${alreadyAdded ? '#8b949e' : '#fff'}; border:none; font-size:11px; padding:5px 10px; border-radius:8px; cursor:${alreadyAdded ? 'default' : 'pointer'};">
+                ${alreadyAdded ? 'В трекере' : '+ Взять'}
+              </button>
+            </div>
+          `;
+        });
+      });
+      openModal('addModal');
+    }
+
+    function addSingleHabit(icon, name, sub) {
+      if (habits.length >= maxAllowed) {
+        closeModal('addModal');
+        tab('pro', document.querySelectorAll('.nav-item')[2]);
+        alert('В тарифе Free доступно до 3 привычек.');
+        return;
+      }
+      habits.push({ id: Date.now(), icon: icon, name: name, sub: sub, done: false, note: '' });
+      saveState();
+      closeModal('addModal');
+      renderHabits();
+    }
+
+    function addCustomHabit() {
+      const input = document.getElementById('customName');
+      const val = input.value.trim();
+      if (val.length < 2) {
+        alert('Введите название привычки (от 2 символов).');
+        return;
+      }
+      if (habits.length >= maxAllowed) {
+        closeModal('addModal');
+        tab('pro', document.querySelectorAll('.nav-item')[2]);
+        alert('В тарифе Free доступно до 3 привычек.');
+        return;
+      }
+      habits.push({ id: Date.now(), icon: '🎯', name: val, sub: 'Личная цель', done: false, note: '' });
+      input.value = '';
+      saveState();
+      closeModal('addModal');
+      renderHabits();
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      if (tg?.BackButton) {
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => closeModal(id));
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      if (tg?.BackButton) {
+        tg.BackButton.hide();
+      }
+    }
+
+    function renderCal() {
+      const g = document.getElementById('calGrid');
+      g.innerHTML = '';
+      const now = new Date();
+      const currentDay = now.getDate();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+      document.getElementById('calMonthTitle').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const c = document.createElement('div');
+        c.className = 'day-cell';
+        c.innerText = d;
+
+        const padM = String(month + 1).padStart(2, '0');
+        const padD = String(d).padStart(2, '0');
+        const dateKey = `${year}-${padM}-${padD}`;
+
+        if (history[dateKey] === 'done') c.classList.add('done-100');
+        if (history[dateKey] === 'frozen') c.classList.add('frozen');
+
+        if (d === currentDay) {
+          c.classList.add('today');
+        } else if (d > currentDay) {
+          c.classList.add('locked');
+          c.onclick = () => alert('Этот день еще впереди. Фокусируйтесь на сегодняшнем!');
+        }
+        g.appendChild(c);
+      }
+    }
+
+    function tab(name, el) {
+      // Закрываем модалки при переключении табов
+      document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+      if (tg?.BackButton) tg.BackButton.hide();
+
+      try {
+        if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      } catch(e) {}
+      document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(`view-${name}`).classList.add('active');
+      el.classList.add('active');
+      if (name === 'cal') renderCal();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    renderCal();
+  </script>
 </body>
 </html>
