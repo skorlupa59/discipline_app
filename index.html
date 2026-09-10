@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Aura Habit Tracker</title>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- HTML2Canvas for Stories card export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: rgba(22, 27, 34, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #2ea043;
+      --accent-glow: rgba(46, 160, 67, 0.35);
+      --ice: #38bdf8;
+      --gold: #f59e0b;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --pill-bg: #1f242c;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    body {
+      background: radial-gradient(circle at top, #161b22 0%, #0d1117 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 16px 16px 96px;
+      overflow-x: hidden;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .greeting {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+    .user-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .header-badges {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .streak-badge {
+      background: rgba(255, 159, 10, 0.12);
+      border: 1px solid rgba(255, 159, 10, 0.3);
+      padding: 5px 10px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 12px;
+      color: #ff9f0a;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .freeze-badge {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 5px 10px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--ice);
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    /* Views */
+    .view-screen { display: none; }
+    .view-screen.active { display: block; animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Progress Card */
+    .progress-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+    }
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 10px;
+    }
+    .progress-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #3fb950;
+    }
+    .bar-bg {
+      height: 9px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2ea043, #56d364);
+      border-radius: 10px;
+      transition: width 0.35s ease;
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Year 365 tracker card on Calendar tab */
+    .year-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .year-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .year-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .year-val {
+      font-size: 12px;
+      color: #3fb950;
+      font-weight: 700;
+    }
+
+    /* Section Bar */
+    .section-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .btn-action-group {
+      display: flex;
+      gap: 6px;
+    }
+    .top-btn {
+      background: #238636;
+      color: #fff;
+      border: none;
+      padding: 6px 11px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .story-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f0f6fc;
+      border: 1px solid var(--card-border);
+    }
+
+    /* Habits List */
+    .habit-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .habit-item.done {
+      border-color: rgba(46, 160, 67, 0.4);
+      background: rgba(46, 160, 67, 0.08);
+    }
+    .habit-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .habit-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      flex: 1;
+    }
+    .habit-icon {
+      font-size: 22px;
+      width: 40px;
+      height: 40px;
+      background: var(--pill-bg);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .habit-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .habit-item.done .habit-name {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .habit-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .checkbox-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      border: 2px solid rgba(255,255,255,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .habit-item.done .checkbox-btn {
+      background: #2ea043;
+      border-color: #2ea043;
+    }
+
+    /* Actions below habit */
+    .habit-actions-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .habit-action-link {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .note-box { display: none; margin-top: 8px; }
+    .note-box.open { display: block; }
+    .note-input {
+      width: 100%;
+      background: #111418;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      resize: none;
+    }
+
+    /* Challenge card */
+    .challenge-card {
+      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), var(--card-bg) 60%);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .challenge-title { font-size: 13px; font-weight: 700; color: #fff; }
+    .challenge-sub { font-size: 11px; color: var(--text-muted); }
+    .invite-btn {
+      background: var(--ice);
+      color: #0b1320;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Calendar Grid */
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .day-cell {
+      aspect-ratio: 1;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background: rgba(255,255,255,0.04);
+      cursor: pointer;
+      border: 1px solid transparent;
+      position: relative;
+    }
+    .day-cell.done-100 {
+      background: rgba(46, 160, 67, 0.25);
+      border-color: #2ea043;
+      color: #3fb950;
+      font-weight: 700;
+    }
+    .day-cell.frozen {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--ice);
+      color: var(--ice);
+    }
+    .day-cell.today {
+      border: 2px solid #58a6ff;
+    }
+    .day-cell.locked {
+      opacity: 0.25;
+      cursor: not-allowed;
+      border: 1px dashed rgba(255,255,255,0.1);
+    }
+
+    /* Paywall */
+    .pay-card {
+      background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.15), var(--card-bg) 65%);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+    }
+    .tier-box {
+      border: 1px solid var(--card-border);
+      background: var(--pill-bg);
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 12px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .tier-box.active {
+      border-color: #fbbf24;
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    /* Modals */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      align-items: flex-end;
+    }
+    .modal.open { display: flex; }
+    .modal-content {
+      background: #161b22;
+      width: 100%;
+      border-radius: 24px 24px 0 0;
+      padding: 20px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    /* Timer */
+    .timer-display {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #3fb950;
+      text-align: center;
+      margin: 16px 0;
+    }
+    .timer-presets {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .preset-btn {
+      background: var(--pill-bg);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .preset-btn.active {
+      background: rgba(46, 160, 67, 0.2);
+      border-color: #2ea043;
+      color: #3fb950;
+    }
+
+    /* Stories Poster Container */
+    #storiesCardContainer {
+      width: 290px;
+      background: #0d1117;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 24px 18px;
+      margin: 0 auto 16px;
+      text-align: center;
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      position: fixed;
+      bottom: 12px;
+      left: 16px;
+      right: 16px;
+      height: 60px;
+      background: rgba(22, 27, 34, 0.94);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .nav-item {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+    }
+    .nav-item.active { color: #3fb950; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="greeting" id="devBadge">Фокус дня</div>
+      <div class="user-title" id="userNameLabel">Aura Tracker ✨</div>
+    </div>
+    <div class="header-badges">
+      <div class="freeze-badge" onclick="useStreakFreeze()">
+        <span>🧊</span>
+        <span id="freezeCount">1 шт.</span>
+      </div>
+      <div class="streak-badge">
+        <span>🔥</span>
+        <span id="streakDays">6 дней</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 1: TODAY -->
+  <div id="view-today" class="view-screen active">
+    
+    <div class="challenge-card">
+      <div>
+        <div class="challenge-title">👥 Челлендж в паре</div>
+        <div class="challenge-sub">Держи фокус вместе с другом</div>
+      </div>
+      <button class="invite-btn" onclick="openInviteModal()">Позвать друга</button>
+    </div>
+
+    <div class="progress-card">
+      <div class="progress-top">
+        <div>
+          <div style="font-size: 12px; color: var(--text-muted);">Дневной план</div>
+          <div style="font-size: 13px; margin-top:2px;" id="countLabel">0 из 0 закрыто</div>
+        </div>
+        <div class="progress-value" id="pctLabel">0%</div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
+    </div>
+
+    <div class="section-bar">
+      <div class="section-title">Твои привычки</div>
+      <div class="btn-action-group">
+        <button class="top-btn story-btn" onclick="openStoriesModal()">📸 Stories</button>
+        <button class="top-btn" onclick="openAddModal()">+ Добавить</button>
+      </div>
+    </div>
+
+    <div id="habitsList"></div>
+  </div>
+
+  <!-- VIEW 2: CALENDAR -->
+  <div id="view-cal" class="view-screen">
+    <div class="year-card">
+      <div class="year-top">
+        <div class="year-title">🏆 Марафон 365 Дней</div>
+        <div class="year-val" id="yearProgressLabel">День 6 из 365 (1.6%)</div>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" id="yearBarFill" style="width: 1.6%;"></div>
+      </div>
+    </div>
+
+    <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;" id="calMonthTitle">Календарь месяца</div>
+    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Прошедшие дни кликабельны с историей. Будущие дни защищены от накруток.</div>
+    <div class="days-grid" id="calGrid"></div>
+  </div>
+
+  <!-- VIEW 3: PRO / MAX PAYWALL -->
+  <div id="view-pro" class="view-screen">
+    <div class="pay-card">
+      <div id="proCardBadge" style="font-size: 11px; font-weight: 800; color: #fbbf24; letter-spacing: 1px;">ТАРИФНЫЕ ПЛАНЫ</div>
+      <div id="proCardTitle" style="font-size: 20px; font-weight: 800; margin: 6px 0;">Выбери свой уровень</div>
+      <div id="proCardDesc" style="font-size: 12px; color: var(--text-muted);">Инвестируй в привычки по цене чашки чая.</div>
+
+      <div id="tierListBlock">
+        <div class="tier-box active" onclick="setTier(this, 'pro')">
+          <div style="display:flex; justify-content:space-between; font-weight:700;">
+            <span>⭐ Aura PRO</span><span style="color:#fbbf24;">50 ₽ / мес</span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">До 5 привычек • Заметки к делам • История в календаре • 1 Заморозка серии</div>
+        </div>
+
+        <div class="tier-box" onclick="setTier(this, 'max')">
+          <div style="display:flex; justify-content:space-between; font-weight:700;">
+            <span>👑 Aura MAX</span><span style="color:#3fb950;">250 ₽ / мес</span>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Безлимит привычек • Фокус-таймер • Напоминания в TG • Авто-защита серий</div>
+        </div>
+
+        <button onclick="buySubscription()" style="width:100%; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; color:#fff; font-weight:700; padding:14px; border-radius:14px; margin-top:16px; font-size:14px; cursor:pointer;">
+          Подключить подписку
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TIMER -->
+  <div class="modal" id="timerModal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-weight:700; font-size:16px;" id="timerHabitTitle">Фокус-таймер</div>
+        <button onclick="closeModal('timerModal')" style="background:none; border:none; color:#fff; font-size:18px;">✕</button>
+      </div>
+      <div class="timer-presets">
+        <button class="preset-btn active" onclick="setTimerDuration(25)">25 мин (Помодоро)</button>
+        <button class="preset-btn" onclick="setTimerDuration(45)">45 мин</button>
+        <button class="preset-btn" onclick="setTimerDuration(60)">60 мин</button>
+      </div>
+      <div class="timer-display" id="timerDisplay">25:00</div>
+      <button id="timerToggleBtn" onclick="toggleTimer()" style="width:100%; background:#238636; border:none; color:#fff; padding:12px; border-radius:12px; font-weight:700; font-size:14px; cursor:pointer;">
+        Старт сессии
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD HABIT -->
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-weight:700; font-size:16px;">Каталог привычек</div>
+        <button onclick="closeModal('addModal')" style="background:none; border:none; color:#fff; font-size:18px;">✕</button>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">Выбери готовую привычку или добавь собственную.</div>
+      <div style="display:flex; flex-direction:column; gap:8px;" id="catalogList"></div>
+
+      <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--card-border);">
+        <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Своя привычка:</div>
+        <input type="text" id="customName" placeholder="Название..." style="width:100%; background:#111418; border:1px solid var(--card-border); color:#fff; padding:10px; border-radius:10px; font-size:13px; margin-bottom:8px;" />
+        <button onclick="addCustomHabit()" style="width:100%; background:#238636; border:none; color:#fff; padding:10px; border-radius:10px; font-weight:600; cursor:pointer;">Добавить в трекер</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DAY VIEW -->
+  <div class="modal" id="dayModal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-weight:700; font-size:16px;" id="dayModalTitle">День</div>
+        <button onclick="closeModal('dayModal')" style="background:none; border:none; color:#fff; font-size:18px;">✕</button>
+      </div>
+      <div id="dayModalBody"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: STORIES EXPORT -->
+  <div class="modal" id="storiesModal">
+    <div class="modal-content" style="text-align: center;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <div style="font-weight:700; font-size:16px;">Поделиться прогрессом</div>
+        <button onclick="closeModal('storiesModal')" style="background:none; border:none; color:#fff; font-size:18px;">✕</button>
+      </div>
+
+      <div id="storiesCardContainer">
+        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 1px;">AURA HABIT TRACKER</div>
+        <div style="font-size: 44px; font-weight: 900; color: #3fb950; margin: 10px 0;" id="storyPct">85%</div>
+        <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px;">Фокус дня удержан 🔥</div>
+        <div style="font-size: 12px; color: #ff9f0a; font-weight: 700;">Серия: <span id="storyStreak">6 дней подряд</span></div>
+        <div style="margin-top: 14px; font-size: 10px; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">t.me/aura_habits_bot</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button onclick="downloadStoriesPNG()" style="width:100%; background:#238636; border:none; color:#fff; padding:12px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer;">
+          💾 Сохранить картинку в галерею
+        </button>
+        <button onclick="shareToTelegramStory()" style="width:100%; background:rgba(255,255,255,0.08); border:1px solid var(--card-border); color:#fff; padding:12px; border-radius:12px; font-weight:600; font-size:13px; cursor:pointer;">
+          ✈️ Выложить в Telegram Stories
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="nav-bar">
+    <div class="nav-item active" onclick="tab('today', this)"><div>⚡</div><div>Сегодня</div></div>
+    <div class="nav-item" onclick="tab('cal', this)"><div>📅</div><div>Календарь</div></div>
+    <div class="nav-item" onclick="tab('pro', this)"><div>⭐</div><div id="proTabTitle">Тарифы</div></div>
+  </div>
+
+  <script>
+    // -------------------------------------------------------------
+    // РАЗРАБОТЧИКИ И ТЕСТИРОВЩИКИ (ВВЕДИТЕ НИКИ БЕЗ @)
+    // -------------------------------------------------------------
+    const DEV_TELEGRAM_USERNAMES = ['egorbai59']; 
+    const DEV_TELEGRAM_IDS = [938527107];
+
+    // -------------------------------------------------------------
+    // ЗАЩИТА ОТ НАКРУТОК: ЭТАЛОННОЕ СЕРВЕРНОЕ ВРЕМЯ
+    // -------------------------------------------------------------
+    let realServerDate = new Date();
+
+    async function syncRealServerTime() {
+      try {
+        const res = await fetch('https://worldtimeapi.org/api/timezone/Etc/UTC', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          realServerDate = new Date(data.utc_datetime);
+        }
+      } catch (e) {
+        realServerDate = new Date();
+      }
+      renderCal();
+    }
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const currentTgUser = tg?.initDataUnsafe?.user;
+    const isDev = currentTgUser && (
+      DEV_TELEGRAM_USERNAMES.includes(currentTgUser.username) ||
+      DEV_TELEGRAM_IDS.includes(currentTgUser.id)
+    );
+
+    const maxAllowed = isDev ? 999 : 3;
+
+    if (isDev) {
+      document.getElementById('devBadge').innerText = '👑 CREATOR ACCESS';
+      document.getElementById('devBadge').style.color = '#fbbf24';
+      document.getElementById('proTabTitle').innerText = 'Aura Max';
+      document.getElementById('proCardBadge').innerText = 'РЕЖИМ СОЗДАТЕЛЯ';
+      document.getElementById('proCardTitle').innerText = 'Aura MAX активирован';
+      document.getElementById('proCardDesc').innerText = 'Вам и вашей команде доступны все функции без ограничений.';
+      document.getElementById('tierListBlock').style.display = 'none';
+    }
+
+    if (currentTgUser?.first_name) {
+      document.getElementById('userNameLabel').innerText = `${currentTgUser.first_name} ✨`;
+    }
+
+    let habits = JSON.parse(localStorage.getItem('aura_habits')) || [
+      { id: 1, icon: '🎬', name: 'Монтаж в Premiere Pro', sub: '1 час практики', done: false, note: '' },
+      { id: 2, icon: '🏃', name: 'Тренировка / Спорт', sub: 'Зал или турники', done: false, note: '' },
+      { id: 3, icon: '⚡', name: 'After Effects туториал', sub: 'Новый прием', done: false, note: '' }
+    ];
+
+    let freezes = parseInt(localStorage.getItem('aura_freezes') || '1', 10);
+    let streak = parseInt(localStorage.getItem('aura_streak') || '6', 10);
+
+    function saveState() {
+      localStorage.setItem('aura_habits', JSON.stringify(habits));
+      localStorage.setItem('aura_freezes', freezes);
+      localStorage.setItem('aura_streak', streak);
+    }
+
+    const catalog = [
+      { icon: '📖', name: 'Чтение 20 страниц', sub: 'Книга по скиллам' },
+      { icon: '💧', name: 'Водный баланс', sub: '2 литра воды' },
+      { icon: '🧹', name: 'Уборка пространства', sub: 'Раз в неделю' },
+      { icon: '📵', name: 'Детокс перед сном', sub: 'Без экрана за 1 час' },
+      { icon: '💼', name: 'Поиск клиентов / портфолио', sub: 'Фриланс шаг' }
+    ];
+
+    function renderHabits() {
+      const el = document.getElementById('habitsList');
+      el.innerHTML = '';
+      habits.forEach(h => {
+        el.innerHTML += `
+          <div class="habit-item ${h.done ? 'done' : ''}">
+            <div class="habit-row">
+              <div class="habit-left" onclick="toggle(${h.id})">
+                <div class="habit-icon">${h.icon}</div>
+                <div>
+                  <div class="habit-name">${h.name}</div>
+                  <div class="habit-sub">${h.sub}</div>
+                </div>
+              </div>
+              <div class="checkbox-btn" onclick="toggle(${h.id})">
+                ${h.done ? '✓' : ''}
+              </div>
+            </div>
+            <div class="habit-actions-row">
+              <button class="habit-action-link" onclick="openTimerModal('${h.name}', ${h.id})">
+                ⏱️ Таймер фокуса
+              </button>
+              <button class="habit-action-link" onclick="toggleNoteBox(${h.id})">
+                📝 ${h.note ? 'Заметка сохранена' : 'Добавить заметку'}
+              </button>
+            </div>
+            <div class="note-box ${h.note ? 'open' : ''}" id="box-${h.id}">
+              <textarea class="note-input" placeholder="Как прошла сессия?" onchange="saveNote(${h.id}, this.value)">${h.note}</textarea>
+            </div>
+          </div>
+        `;
+      });
+      updateProgress();
+    }
+
+    function toggle(id) {
+      const h = habits.find(x => x.id === id);
+      if (h) {
+        h.done = !h.done;
+        if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+        saveState();
+        renderHabits();
+      }
+    }
+
+    function toggleNoteBox(id) {
+      const b = document.getElementById(`box-${id}`);
+      b.classList.toggle('open');
+    }
+
+    function saveNote(id, txt) {
+      const h = habits.find(x => x.id === id);
+      if (h) {
+        h.note = txt;
+        saveState();
+      }
+    }
+
+    function updateProgress() {
+      const done = habits.filter(h => h.done).length;
+      const total = habits.length;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById('countLabel').innerText = `${done} из ${total} закрыто`;
+      document.getElementById('pctLabel').innerText = `${pct}%`;
+      document.getElementById('barFill').style.width = `${pct}%`;
+      document.getElementById('freezeCount').innerText = `${freezes} шт.`;
+      document.getElementById('streakDays').innerText = `${streak} дней`;
+
+      // Марафон 365
+      const yearPct = ((streak / 365) * 100).toFixed(1);
+      document.getElementById('yearProgressLabel').innerText = `День ${streak} из 365 (${yearPct}%)`;
+      document.getElementById('yearBarFill').style.width = `${yearPct}%`;
+
+      if (pct === 100 && window.confetti) confetti({ particleCount: 70, spread: 60 });
+    }
+
+    function useStreakFreeze() {
+      if (freezes <= 0) {
+        alert('У вас закончились заморозки! Получите больше в тарифе Aura MAX.');
+        return;
+      }
+      if (confirm('Использовать 1 заморозку 🧊, чтобы защитить стрик от сгорания?')) {
+        freezes--;
+        saveState();
+        updateProgress();
+        alert('Заморозка серии активна на сегодня!');
+      }
+    }
+
+    // Фокус-таймер
+    let timerInterval = null;
+    let timerSeconds = 25 * 60;
+    let activeTimerHabitId = null;
+
+    function openTimerModal(name, habitId) {
+      activeTimerHabitId = habitId;
+      document.getElementById('timerHabitTitle').innerText = name;
+      document.getElementById('timerModal').classList.add('open');
+    }
+
+    function setTimerDuration(mins) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('timerToggleBtn').innerText = 'Старт сессии';
+      timerSeconds = mins * 60;
+      updateTimerDisplay();
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60);
+      const s = timerSeconds % 60;
+      document.getElementById('timerDisplay').innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('timerToggleBtn');
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        btn.innerText = 'Продолжить';
+      } else {
+        btn.innerText = 'Пауза';
+        timerInterval = setInterval(() => {
+          if (timerSeconds > 0) {
+            timerSeconds--;
+            updateTimerDisplay();
+          } else {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            btn.innerText = 'Завершено!';
+            if (activeTimerHabitId) toggle(activeTimerHabitId);
+            if (window.confetti) confetti({ particleCount: 100, spread: 80 });
+            alert('Сессия фокуса завершена! Привычка отмечена как выполненная.');
+            closeModal('timerModal');
+          }
+        }, 1000);
+      }
+    }
+
+    // Stories Export
+    function openStoriesModal() {
+      const done = habits.filter(h => h.done).length;
+      const total = habits.length;
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById('storyPct').innerText = `${pct}%`;
+      document.getElementById('storyStreak').innerText = `${streak} дней подряд`;
+      document.getElementById('storiesModal').classList.add('open');
+    }
+
+    function downloadStoriesPNG() {
+      const target = document.getElementById('storiesCardContainer');
+      html2canvas(target, { backgroundColor: '#0d1117', scale: 3 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Aura_Habits_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    function shareToTelegramStory() {
+      if (tg?.shareToStory) {
+        alert('Вызывается нативный Telegram Stories шеринг!');
+      } else {
+        downloadStoriesPNG();
+        alert('Картинка сохранена! Вы можете прикрепить её в свои Stories в Telegram или Instagram.');
+      }
+    }
+
+    function openInviteModal() {
+      const inviteUrl = 'https://t.me/aura_habits_bot?start=challenge_invite';
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(inviteUrl)}&text=${encodeURIComponent('Давай качать дисциплину вместе в Aura!')}`);
+      } else {
+        navigator.clipboard?.writeText(inviteUrl);
+        alert('Инвайт-ссылка на челлендж скопирована в буфер обмена!');
+      }
+    }
+
+    function tab(name, el) {
+      if (tg?.HapticFeedback) tg.HapticFeedback.selectionChanged();
+      document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(`view-${name}`).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function openAddModal() {
+      const cl = document.getElementById('catalogList');
+      cl.innerHTML = '';
+      catalog.forEach((item, idx) => {
+        cl.innerHTML += `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#111418; padding:10px 12px; border-radius:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span>${item.icon}</span>
+              <div>
+                <div style="font-size:13px; font-weight:600;">${item.name}</div>
+                <div style="font-size:10px; color:var(--text-muted);">${item.sub}</div>
+              </div>
+            </div>
+            <button onclick="addFromCatalog(${idx})" style="background:#30363d; border:none; color:#fff; font-size:11px; padding:6px 10px; border-radius:8px; cursor:pointer;">+ Взять</button>
+          </div>
+        `;
+      });
+      document.getElementById('addModal').classList.add('open');
+    }
+
+    function addFromCatalog(idx) {
+      if (habits.length >= maxAllowed) {
+        closeModal('addModal');
+        tab('pro', document.querySelectorAll('.nav-item')[2]);
+        alert('В тарифе Free доступно только 3 привычки! Оформите Pro всего за 50 ₽.');
+        return;
+      }
+      const c = catalog[idx];
+      habits.push({ id: Date.now(), icon: c.icon, name: c.name, sub: c.sub, done: false, note: '' });
+      saveState();
+      closeModal('addModal');
+      renderHabits();
+    }
+
+    function addCustomHabit() {
+      const val = document.getElementById('customName').value.trim();
+      if (!val) return;
+      if (habits.length >= maxAllowed) {
+        closeModal('addModal');
+        tab('pro', document.querySelectorAll('.nav-item')[2]);
+        alert('В тарифе Free доступно только 3 привычки! Оформите Pro за 50 ₽.');
+        return;
+      }
+      habits.push({ id: Date.now(), icon: '🎯', name: val, sub: 'Своя привычка', done: false, note: '' });
+      document.getElementById('customName').value = '';
+      saveState();
+      closeModal('addModal');
+      renderHabits();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    // Календарь с защитой от накруток времени
+    function renderCal() {
+      const g = document.getElementById('calGrid');
+      g.innerHTML = '';
+      
+      const realDay = realServerDate.getDate();
+      const realMonthName = realServerDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+      document.getElementById('calMonthTitle').innerText = realMonthName.charAt(0).toUpperCase() + realMonthName.slice(1);
+
+      // Общее количество дней в текущем месяце
+      const daysInMonth = new Date(realServerDate.getFullYear(), realServerDate.getMonth() + 1, 0).getDate();
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const c = document.createElement('div');
+        c.className = 'day-cell';
+        c.innerText = d;
+
+        if (d === realDay) {
+          c.classList.add('today');
+          c.onclick = () => openDayDetails(d);
+        } else if (d < realDay) {
+          if (d === 4) c.classList.add('frozen');
+          if (d !== 4 && d % 3 !== 0) c.classList.add('done-100');
+          c.onclick = () => openDayDetails(d);
+        } else {
+          // Будущие дни: заблокированы
+          c.classList.add('locked');
+          c.onclick = () => alert('Этот день еще не наступил! Заполнить его наперед нельзя.');
+        }
+
+        g.appendChild(c);
+      }
+    }
+
+    function openDayDetails(day) {
+      document.getElementById('dayModalTitle').innerText = `${day} число месяца`;
+      const isPast = day < realServerDate.getDate();
+      document.getElementById('dayModalBody').innerHTML = `
+        <div style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">Статус: ${isPast ? (day === 4 ? 'Спасен заморозкой 🧊' : 'Выполнено на 100% 🔥') : 'Сегодняшний день'}</div>
+        <div style="background:#111418; padding:12px; border-radius:12px; font-size:13px; display:flex; flex-direction:column; gap:8px;">
+          <div>🎬 Монтаж в Premiere Pro: <b>Выполнено</b></div>
+          <div style="color:var(--text-muted); font-size:11px;">📝 Заметка: «Собрал динамику ролика»</div>
+          <div style="border-top:1px solid rgba(255,255,255,0.06); padding-top:6px;">🏃 Спорт: <b>Выполнено</b></div>
+        </div>
+      `;
+      document.getElementById('dayModal').classList.add('open');
+    }
+
+    function setTier(el, tier) {
+      document.querySelectorAll('.tier-box').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function buySubscription() {
+      alert('Оплата через Telegram Stars подключена!');
+    }
+
+    renderHabits();
+    syncRealServerTime();
+  </script>
+</body>
+</html>
