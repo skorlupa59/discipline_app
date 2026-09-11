@@ -81,8 +81,8 @@
     .day-cell.today { border: 2px solid #58a6ff; font-weight: 800; }
     .day-cell.locked { opacity: 0.25; cursor: not-allowed; border: 1px dashed rgba(255,255,255,0.1); }
     
-    /* Новые стили для дней до регистрации */
-    .day-cell.pre-reg { opacity: 0.15; background: transparent; cursor: default; }
+    /* Полупрозрачные дни до регистрации (сетка сохраняется) */
+    .day-cell.pre-reg { opacity: 0.15; pointer-events: none; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: flex-end; justify-content: center; }
     .modal.open { display: flex; }
@@ -180,7 +180,7 @@
         </div>
       </div>
       <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;" id="calMonthTitle">Календарь</div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Зелёный = 100%. Голубой = заморозка. Тусклые = до регистрации.</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Зелёный = 100% плана. Голубой = заморозка.</div>
       <div class="days-grid" id="calGrid"></div>
     </div>
 
@@ -245,9 +245,9 @@
   </div>
 
   <script>
-    const BOT_USERNAME = 'titan_disciplin_bot';
-    const DEV_TELEGRAM_USERNAMES = ['egorbai59', 'AAAAAAAAASEE'];
-    const DEV_TELEGRAM_IDS = [938527107, 863412665];
+    const BOT_USERNAME = 'titan_discipline_bot';
+    const DEV_TELEGRAM_USERNAMES = ['egorbai59'];
+    const DEV_TELEGRAM_IDS = [938527107];
 
     const tg = window.Telegram?.WebApp;
     if (tg) {
@@ -320,8 +320,6 @@
     const FREEZES_KEY = `disc_freezes_${userId}`;
     const DATE_KEY = `disc_last_date_${userId}`;
     const HISTORY_KEY = `disc_history_${userId}`;
-    
-    // Новые ключи для заморозок и календаря
     const REG_DATE_KEY = `disc_reg_date_${userId}`;
     const FREEZE_MONTH_KEY = `disc_freeze_month_${userId}`;
 
@@ -336,8 +334,6 @@
 
     let habits = safeJsonParse(STORAGE_KEY, null);
     let streak = parseInt(localStorage.getItem(STREAK_KEY) || '0', 10);
-    
-    // Инициализируем количество заморозок (по умолчанию 1)
     let freezes = localStorage.getItem(FREEZES_KEY) !== null ? parseInt(localStorage.getItem(FREEZES_KEY), 10) : 1;
     let history = safeJsonParse(HISTORY_KEY, {});
     let regDate = localStorage.getItem(REG_DATE_KEY);
@@ -352,13 +348,12 @@
     let todayStr = getLocalDateString();
     let celebratedToday = false;
 
-    // Логика ежемесячной бесплатной заморозки
     function checkMonthlyFreeze() {
-      const currentMonthStr = todayStr.substring(0, 7); // Формат "YYYY-MM"
+      const currentMonthStr = todayStr.substring(0, 7);
       const lastFreezeMonth = localStorage.getItem(FREEZE_MONTH_KEY);
 
       if (lastFreezeMonth !== currentMonthStr) {
-        if (freezes < 1) freezes = 1; // Даем 1 бесплатную, если баланс пуст
+        if (freezes < 1) freezes = 1;
         localStorage.setItem(FREEZE_MONTH_KEY, currentMonthStr);
         saveState();
       }
@@ -453,15 +448,14 @@
         const i = chk.getAttribute('data-i');
         const item = FULL_CATALOG[g].items[i];
         if (!habits.some(h => h.name === item.name)) {
-          habits.push({ id: Date.now() + Math.random(), icon: item.icon, name: item.name, sub: item.sub, done: false, note: '' });
+          habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: item.icon, name: item.name, sub: item.sub, done: false, note: '' });
         }
       });
 
       if (habits.length === 0) {
-        habits.push({ id: Date.now(), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', done: false, note: '' });
+        habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', done: false, note: '' });
       }
 
-      // Фиксируем дату регистрации
       if (!regDate) {
         regDate = todayStr;
         localStorage.setItem(REG_DATE_KEY, regDate);
@@ -581,7 +575,6 @@
       }
     }
 
-    // НОВАЯ ЛОГИКА ЗАМОРОЗОК (ПОКУПКА И ИСПОЛЬЗОВАНИЕ)
     function handleFreezeClick() {
       if (history[todayStr] === 'done') {
         alert('План уже закрыт на 100%, спасать день не нужно!');
@@ -594,7 +587,6 @@
 
       if (freezes <= 0) {
         if (confirm('Бесплатная заморозка в этом месяце исчерпана. Докупить экстренную заморозку за 20 ₽? (максимум 3)')) {
-          // Имитация покупки. В будущем тут будет вызов tg.openInvoice()
           alert('В разработке: здесь откроется нативное окно оплаты Telegram Stars/ЮKassa. Пока выдаем заморозку тестово!');
           freezes += 1;
           saveState();
@@ -661,7 +653,7 @@
         alert('В тарифе Free доступно до 3 привычек.');
         return;
       }
-      habits.push({ id: Date.now(), icon: icon, name: name, sub: sub, done: false, note: '' });
+      habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: icon, name: name, sub: sub, done: false, note: '' });
       saveState();
       closeModal('addModal');
       renderHabits();
@@ -680,7 +672,7 @@
         alert('В тарифе Free доступно до 3 привычек.');
         return;
       }
-      habits.push({ id: Date.now(), icon: '🎯', name: val, sub: 'Личная цель', done: false, note: '' });
+      habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: '🎯', name: val, sub: 'Личная цель', done: false, note: '' });
       input.value = '';
       saveState();
       closeModal('addModal');
@@ -721,7 +713,6 @@
         const padD = String(d).padStart(2, '0');
         const dateKey = `${year}-${padM}-${padD}`;
 
-        // Логика скрытия дней ДО регистрации
         if (regDate && dateKey < regDate) {
           c.classList.add('pre-reg');
         } else {
