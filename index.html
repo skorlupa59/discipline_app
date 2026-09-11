@@ -72,6 +72,7 @@
     .note-input { width: 100%; background: #0f131a; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-size: 12px; resize: none; outline: none; }
 
     .challenge-card { background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), var(--card-bg) 60%); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .plan-card { background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), var(--card-bg) 60%); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
     .invite-btn { background: var(--ice); color: #0b1320; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
 
     .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
@@ -138,6 +139,17 @@
 
     <!-- TODAY -->
     <div id="view-today" class="view-screen active">
+
+      <!-- Кнопка конструктора (заглушка на завтра) -->
+      <div class="plan-card">
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">🌙 План на завтра</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Настрой расписание и задачи</div>
+        </div>
+        <button class="invite-btn" style="background: #8b5cf6; color: #fff;" onclick="openPlanModal()">Конструктор</button>
+      </div>
+
+      <!-- Карточка совместного фокуса -->
       <div class="challenge-card">
         <div>
           <div style="font-size: 13px; font-weight: 700;">👥 Совместный фокус</div>
@@ -200,6 +212,19 @@
           <button onclick="alert('Оплата через Stars будет доступна в следующем релизе!')" style="width:100%; background:linear-gradient(135deg, #f59e0b, #d97706); border:none; color:#fff; font-weight:700; padding:14px; border-radius:14px; margin-top:16px; font-size:14px; cursor:pointer;">
             Подключить
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- МОДАЛКА ПЛАНА НА ЗАВТРА (ЗАГЛУШКА) -->
+    <div class="modal" id="planModal">
+      <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-weight:700; font-size:16px;">Конструктор задач</div>
+          <button onclick="closeModal('planModal')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div style="color:var(--text-muted); font-size:13px; text-align:center; padding: 40px 0;">
+          Здесь будет конструктор ежедневника и выбор дней недели.
         </div>
       </div>
     </div>
@@ -507,7 +532,11 @@
 
       habits.forEach(h => {
         const area = document.getElementById(`area-${h.id}`);
-        if (area) area.value = h.note || '';
+        if (area) {
+          area.value = h.note || '';
+          area.style.height = 'auto';
+          area.style.height = (area.scrollHeight) + 'px';
+        }
       });
 
       updateProgress();
@@ -542,6 +571,11 @@
         saveState();
         const lbl = document.getElementById(`note-lbl-${id}`);
         if (lbl) lbl.innerText = h.note ? 'Заметка сохранена' : '+ Заметка';
+        const area = document.getElementById(`area-${id}`);
+        if (area) {
+          area.style.height = 'auto';
+          area.style.height = (area.scrollHeight) + 'px';
+        }
       }
     }
 
@@ -677,6 +711,10 @@
       saveState();
       closeModal('addModal');
       renderHabits();
+    }
+
+    function openPlanModal() {
+      openModal('planModal');
     }
 
     function openModal(id) {
