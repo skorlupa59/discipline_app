@@ -45,7 +45,7 @@
     .year-title { font-size: 13px; font-weight: 700; }
     .year-val { font-size: 12px; color: #3fb950; font-weight: 700; }
 
-    .section-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 18px; }
     .section-title { font-size: 15px; font-weight: 700; }
     .btn-action-group { display: flex; gap: 6px; }
     .top-btn { background: #238636; color: #fff; border: none; padding: 6px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
@@ -67,11 +67,6 @@
     .habit-action-link { background: transparent; border: none; color: var(--text-muted); font-size: 11px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
     .del-btn { color: #f85149; }
 
-    .note-box { display: none; margin-top: 8px; }
-    .note-box.open { display: block; }
-    .note-input { width: 100%; background: #0f131a; border: 1px solid var(--card-border); color: #fff; padding: 10px; border-radius: 8px; font-size: 12px; resize: none; outline: none; }
-
-    .challenge-card { background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), var(--card-bg) 60%); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
     .plan-card { background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), var(--card-bg) 60%); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
     .invite-btn { background: var(--ice); color: #0b1320; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
 
@@ -81,13 +76,23 @@
     .day-cell.frozen { background: rgba(56, 189, 248, 0.2); border-color: var(--ice); color: var(--ice); }
     .day-cell.today { border: 2px solid #58a6ff; font-weight: 800; }
     .day-cell.locked { opacity: 0.25; cursor: not-allowed; border: 1px dashed rgba(255,255,255,0.1); }
-    
-    /* Полупрозрачные дни до регистрации (сетка сохраняется) */
     .day-cell.pre-reg { opacity: 0.15; pointer-events: none; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: flex-end; justify-content: center; }
     .modal.open { display: flex; }
     .modal-content { background: #161b22; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
+
+    /* Планировщик */
+    .date-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
+    .date-scroll::-webkit-scrollbar { display: none; }
+    .date-pill { background: #0f131a; border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 16px; text-align: center; cursor: pointer; min-width: 60px; }
+    .date-pill.active { background: rgba(139, 92, 246, 0.2); border-color: #8b5cf6; color: #fff; }
+    .date-pill-day { font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+    .date-pill-num { font-size: 16px; font-weight: 800; }
+
+    .day-toggle-group { display: flex; gap: 6px; margin-top: 12px; margin-bottom: 16px; justify-content: space-between; }
+    .day-toggle { width: 36px; height: 36px; border-radius: 10px; background: #0f131a; border: 1px solid var(--card-border); color: var(--text-muted); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .day-toggle.active { background: #238636; border-color: #2ea043; color: #fff; }
 
     .onboarding-screen { display: none; position: fixed; inset: 0; background: #0b0e14; z-index: 9999; padding: 24px 16px; overflow-y: auto; }
     .onboarding-screen.open { display: block; }
@@ -122,7 +127,7 @@
 
     <div class="header">
       <div>
-        <div class="greeting" id="devBadge">Фокус дня</div>
+        <div class="greeting" id="dateBadge">Дата загружается...</div>
         <div class="user-title" id="userNameLabel">Discipline OS</div>
       </div>
       <div class="header-badges">
@@ -140,22 +145,12 @@
     <!-- TODAY -->
     <div id="view-today" class="view-screen active">
 
-      <!-- Кнопка конструктора (заглушка на завтра) -->
       <div class="plan-card">
         <div>
-          <div style="font-size: 13px; font-weight: 700;">🌙 План на завтра</div>
-          <div style="font-size: 11px; color: var(--text-muted);">Настрой расписание и задачи</div>
+          <div style="font-size: 13px; font-weight: 700;">🌙 План на неделю</div>
+          <div style="font-size: 11px; color: var(--text-muted);">Разовые дела и расписание</div>
         </div>
         <button class="invite-btn" style="background: #8b5cf6; color: #fff;" onclick="openPlanModal()">Конструктор</button>
-      </div>
-
-      <!-- Карточка совместного фокуса -->
-      <div class="challenge-card">
-        <div>
-          <div style="font-size: 13px; font-weight: 700;">👥 Совместный фокус</div>
-          <div style="font-size: 11px; color: var(--text-muted);">Держи дисциплину вместе с другом</div>
-        </div>
-        <button class="invite-btn" onclick="inviteFriend()">Позвать друга</button>
       </div>
 
       <div class="progress-card">
@@ -169,23 +164,27 @@
         <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
       </div>
 
-      <div class="section-bar">
+      <div class="section-bar" id="habitsTitleBar">
         <div class="section-title">Твои привычки</div>
         <div class="btn-action-group">
           <button class="top-btn story-btn" onclick="openStoriesModal()">📸 Stories</button>
           <button class="top-btn" onclick="openAddModal()">+ Добавить</button>
         </div>
       </div>
-
       <div id="habitsList"></div>
+
+      <div class="section-bar" id="todosTitleBar" style="display:none; margin-top:24px;">
+        <div class="section-title">Дела на сегодня (To-Do)</div>
+      </div>
+      <div id="todosList"></div>
     </div>
 
     <!-- CALENDAR -->
     <div id="view-cal" class="view-screen">
       <div class="year-card">
         <div class="year-top">
-          <div class="year-title">📅 Годовая серия</div>
-          <div class="year-val" id="yearProgressLabel">День 0 из 365 (0%)</div>
+          <div class="year-title" id="milestoneTitle">🎯 Ближайшая цель</div>
+          <div class="year-val" id="yearProgressLabel">День 0 из 3 (0%)</div>
         </div>
         <div class="bar-bg">
           <div class="bar-fill" id="yearBarFill" style="width: 0%;"></div>
@@ -216,25 +215,53 @@
       </div>
     </div>
 
-    <!-- МОДАЛКА ПЛАНА НА ЗАВТРА (ЗАГЛУШКА) -->
-    <div class="modal" id="planModal">
+    <!-- МОДАЛКА: УТРЕННЯЯ РЕВИЗИЯ -->
+    <div class="modal" id="reviewModal">
       <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <div style="font-weight:700; font-size:16px;">Конструктор задач</div>
-          <button onclick="closeModal('planModal')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
-        </div>
-        <div style="color:var(--text-muted); font-size:13px; text-align:center; padding: 40px 0;">
-          Здесь будет конструктор ежедневника и выбор дней недели.
-        </div>
+        <div style="font-weight:800; font-size:18px; text-align:center; margin-bottom: 8px;">Вчерашние дела 🌙</div>
+        <div style="font-size:13px; color:var(--text-muted); text-align:center; margin-bottom: 16px;">Эти задачи остались невыполненными. Перенести их на сегодня или удалить?</div>
+        <div id="reviewList" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <button onclick="finishReview()" style="width:100%; background:#238636; border:none; color:#fff; font-weight:700; padding:12px; border-radius:12px; margin-top:16px; cursor:pointer;">Готово</button>
       </div>
     </div>
 
+    <!-- МОДАЛКА: ПЛАН НА НЕДЕЛЮ -->
+    <div class="modal" id="planModal">
+      <div class="modal-content" style="max-height: 90vh;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div style="font-weight:700; font-size:18px;">Конструктор недели</div>
+          <button onclick="closeModal('planModal'); renderHabits();" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div class="date-scroll" id="planDateScroll"></div>
+        
+        <div style="margin-top:20px; font-size:14px; font-weight:700; margin-bottom:10px;">Новое дело на <span id="planSelectedDateLabel">...</span>:</div>
+        <input type="text" id="planTodoInput" maxlength="40" placeholder="Например: Записаться к врачу..." style="width:100%; background:#0f131a; border:1px solid var(--card-border); color:#fff; padding:12px; border-radius:12px; font-size:13px; margin-bottom:10px;" />
+        <button onclick="addTodoFromPlan()" style="width:100%; background:#8b5cf6; border:none; color:#fff; padding:12px; border-radius:12px; font-weight:700; cursor:pointer;">Добавить разовое дело</button>
+
+        <div style="margin-top:24px; font-size:14px; font-weight:700; margin-bottom:10px; border-top:1px solid var(--card-border); padding-top:16px;">Запланировано на этот день:</div>
+        <div id="planDayOverview" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+    </div>
+
+    <!-- МОДАЛКА: ДОБАВЛЕНИЕ ПРИВЫЧКИ (С ДНЯМИ НЕДЕЛИ) -->
     <div class="modal" id="addModal">
       <div class="modal-content">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div style="font-weight:700; font-size:16px;">Каталог привычек</div>
           <button onclick="closeModal('addModal')" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
         </div>
+        
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom: 8px; margin-top: 10px;">Выберите дни выполнения:</div>
+        <div class="day-toggle-group" id="habitDaysToggle">
+          <div class="day-toggle active" data-day="1">ПН</div>
+          <div class="day-toggle active" data-day="2">ВТ</div>
+          <div class="day-toggle active" data-day="3">СР</div>
+          <div class="day-toggle active" data-day="4">ЧТ</div>
+          <div class="day-toggle active" data-day="5">ПТ</div>
+          <div class="day-toggle active" data-day="6">СБ</div>
+          <div class="day-toggle active" data-day="0">ВС</div>
+        </div>
+
         <div style="display:flex; flex-direction:column; gap:8px;" id="modalCatalogList"></div>
         <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--card-border);">
           <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Своя привычка:</div>
@@ -255,7 +282,7 @@
           <div style="font-size:34px; margin:8px 0;">⚡</div>
           <div style="font-size:20px; font-weight:800;" id="storyUserName">Лидер</div>
           <div style="font-size:13px; color:#3fb950; margin-top:4px;" id="storyStreakText">Серия: 0 дней</div>
-          <div style="margin-top:12px; font-size:11px; color:var(--text-muted); line-height:1.4;">«Дисциплина — это решение делать то, чего не хочется делать, чтобы достичь того, чего очень хочется достичь.»</div>
+          <div style="margin-top:12px; font-size:11px; color:var(--text-muted); line-height:1.4; font-style:italic;">«Выполнить всё, что запланировал, и не откладывать на завтра то, что можно сделать сегодня!!»</div>
         </div>
         <button onclick="shareStoryNative()" style="width:100%; background:#238636; border:none; color:#fff; padding:12px; border-radius:12px; font-weight:700; margin-top:10px; cursor:pointer;">Отправить в Telegram</button>
       </div>
@@ -286,14 +313,12 @@
     }
 
     const currentTgUser = tg?.initDataUnsafe?.user;
-
     const isDev = Boolean(
       currentTgUser && (
         (currentTgUser.username && DEV_TELEGRAM_USERNAMES.includes(currentTgUser.username.toLowerCase())) ||
         (currentTgUser.id && DEV_TELEGRAM_IDS.includes(Number(currentTgUser.id)))
       )
     );
-
     const maxAllowed = isDev ? 999 : 3;
 
     function getUserId() {
@@ -305,12 +330,9 @@
       }
       return localId;
     }
-
     const userId = getUserId();
 
     if (isDev) {
-      document.getElementById('devBadge').innerText = '👑 CREATOR ACCESS';
-      document.getElementById('devBadge').style.color = '#fbbf24';
       document.getElementById('proTabTitle').innerText = 'Max Status';
       document.getElementById('tierListBlock').innerHTML = '<div style="color:#3fb950; font-weight:700; padding:12px; background:rgba(46,160,67,0.1); border-radius:12px;">👑 Доступ Создателя активен.</div>';
     }
@@ -319,6 +341,29 @@
       document.getElementById('userNameLabel').innerText = currentTgUser.first_name;
       document.getElementById('storyUserName').innerText = currentTgUser.first_name;
     }
+
+    // --- ЛОГИКА ВРЕМЕНИ 3:00 AM ---
+    function getLogicalDate() {
+      const d = new Date();
+      d.setHours(d.getHours() - 3); // Смещаем день на 3 часа назад
+      return d;
+    }
+    
+    function getLogicalDateString() {
+      const d = getLogicalDate();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function updateDateBadge() {
+      const d = getLogicalDate();
+      const months = ['Января','Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября','Ноября','Декабря'];
+      const days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+      document.getElementById('dateBadge').innerText = `${d.getDate()} ${months[d.getMonth()]}, ${days[d.getDay()]}`;
+    }
+    updateDateBadge();
 
     const FULL_CATALOG = [
       { category: 'Спорт и тело', items: [
@@ -330,17 +375,16 @@
       { category: 'Фокус и навыки', items: [
         { icon: '🎬', name: 'Практика монтажа', sub: '1 час в Premiere / AE' },
         { icon: '📖', name: 'Чтение книги', sub: '20 страниц литературы' },
-        { icon: '💻', name: 'Кодинг / Разработка', sub: '1 час практики' },
-        { icon: '🇬🇧', name: 'Английский язык', sub: 'Урок или 30 новых слов' }
+        { icon: '💻', name: 'Кодинг / Разработка', sub: '1 час практики' }
       ]},
       { category: 'Дисциплина и разум', items: [
         { icon: '📵', name: 'Цифровой детокс', sub: 'Без соцсетей утром' },
-        { icon: '🌙', name: 'Режим сна', sub: 'Отбой до 23:30' },
-        { icon: '📝', name: 'Вечерние итоги', sub: 'План на завтра' }
+        { icon: '🌙', name: 'Режим сна', sub: 'Отбой до 23:30' }
       ]}
     ];
 
     const STORAGE_KEY = `disc_habits_${userId}`;
+    const TODOS_KEY = `disc_todos_${userId}`;
     const STREAK_KEY = `disc_streak_${userId}`;
     const FREEZES_KEY = `disc_freezes_${userId}`;
     const DATE_KEY = `disc_last_date_${userId}`;
@@ -352,31 +396,36 @@
       try {
         const val = localStorage.getItem(key);
         return val ? JSON.parse(val) : fallback;
-      } catch (e) {
-        return fallback;
-      }
+      } catch (e) { return fallback; }
     }
 
     let habits = safeJsonParse(STORAGE_KEY, null);
+    let todos = safeJsonParse(TODOS_KEY, []);
     let streak = parseInt(localStorage.getItem(STREAK_KEY) || '0', 10);
     let freezes = localStorage.getItem(FREEZES_KEY) !== null ? parseInt(localStorage.getItem(FREEZES_KEY), 10) : 1;
     let history = safeJsonParse(HISTORY_KEY, {});
     let regDate = localStorage.getItem(REG_DATE_KEY);
 
-    function getLocalDateString(d = new Date()) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    let todayStr = getLocalDateString();
+    let todayStr = getLogicalDateString();
     let celebratedToday = false;
+
+    // Выбор дней при добавлении привычки
+    document.querySelectorAll('.day-toggle').forEach(el => {
+      el.addEventListener('click', function() {
+        this.classList.toggle('active');
+      });
+    });
+
+    function getSelectedDays() {
+      const active = document.querySelectorAll('.day-toggle.active');
+      let days = [];
+      active.forEach(el => days.push(parseInt(el.getAttribute('data-day'), 10)));
+      return days.length > 0 ? days : [0,1,2,3,4,5,6]; // Если все отжаты, страхуем на каждый день
+    }
 
     function checkMonthlyFreeze() {
       const currentMonthStr = todayStr.substring(0, 7);
       const lastFreezeMonth = localStorage.getItem(FREEZE_MONTH_KEY);
-
       if (lastFreezeMonth !== currentMonthStr) {
         if (freezes < 1) freezes = 1;
         localStorage.setItem(FREEZE_MONTH_KEY, currentMonthStr);
@@ -388,28 +437,74 @@
     function saveState() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+        localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
         localStorage.setItem(STREAK_KEY, streak);
         localStorage.setItem(FREEZES_KEY, freezes);
         localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
       } catch (e) {}
     }
 
+    // --- ЛОГИКА УТРЕННЕЙ РЕВИЗИИ (ПЕРЕНОС ДЕЛ) ---
+    function checkMorningReview() {
+      const overdue = todos.filter(t => t.date < todayStr && !t.done);
+      if (overdue.length > 0) {
+        const rl = document.getElementById('reviewList');
+        rl.innerHTML = '';
+        overdue.forEach(t => {
+          rl.innerHTML += `
+            <div style="background:var(--card-bg); border:1px solid var(--card-border); border-radius:12px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+              <div style="font-size:13px; font-weight:600;">${escapeHtml(t.name)}</div>
+              <div style="display:flex; gap:6px;">
+                <button onclick="reviewAction(${t.id}, 'move')" style="background:#2ea043; border:none; padding:6px; border-radius:8px; cursor:pointer;">➡️</button>
+                <button onclick="reviewAction(${t.id}, 'delete')" style="background:#f85149; border:none; padding:6px; border-radius:8px; cursor:pointer;">✕</button>
+              </div>
+            </div>
+          `;
+        });
+        openModal('reviewModal');
+      }
+    }
+
+    function reviewAction(id, action) {
+      if (action === 'delete') {
+        todos = todos.filter(t => t.id !== id);
+      } else if (action === 'move') {
+        const t = todos.find(x => x.id === id);
+        if (t) t.date = todayStr;
+      }
+      saveState();
+      checkMorningReview(); // Перерисовываем список или закрываем
+      renderHabits();
+    }
+    function finishReview() {
+      // Удаляем все оставшиеся, если юзер нажал Готово
+      todos = todos.filter(t => !(t.date < todayStr && !t.done));
+      saveState();
+      closeModal('reviewModal');
+      renderHabits();
+    }
+
     function checkDayTransition() {
-      const actualToday = getLocalDateString();
+      const actualToday = getLogicalDateString();
       const lastActiveDate = localStorage.getItem(DATE_KEY);
 
       if (habits && lastActiveDate && lastActiveDate !== actualToday) {
+        updateDateBadge();
         const lastParts = lastActiveDate.split('-').map(Number);
         const currParts = actualToday.split('-').map(Number);
         const lastD = new Date(lastParts[0], lastParts[1] - 1, lastParts[2]);
         const currD = new Date(currParts[0], currParts[1] - 1, currParts[2]);
         const diffDays = Math.round((currD - lastD) / 86400000);
 
+        // Проверяем, были ли задачи в ПРОШЛЫЙ активный день
+        const lastDWeekDay = lastD.getDay();
+        const lastDayHabits = habits.filter(h => h.days.includes(lastDWeekDay));
+        const lastDayTodos = todos.filter(t => t.date === lastActiveDate);
+        const lastDayTotal = lastDayHabits.length + lastDayTodos.length;
+
         if (diffDays === 1) {
-          const allDoneYesterday = habits.length > 0 && habits.every(h => h.done);
-          if (allDoneYesterday) {
-            streak += 1;
-            history[lastActiveDate] = 'done';
+          if (lastDayTotal === 0 || history[lastActiveDate] === 'done') {
+             if (lastDayTotal > 0) streak += 1; // Увеличиваем стрик только если были задачи
           } else if (history[lastActiveDate] === 'frozen') {
             // серия сохранена
           } else {
@@ -419,13 +514,14 @@
           if (history[lastActiveDate] !== 'frozen') streak = 0;
         }
 
-        habits.forEach(h => h.done = false);
+        habits.forEach(h => h.done = false); // Сбрасываем галочки
         todayStr = actualToday;
         celebratedToday = false;
         
         localStorage.setItem(DATE_KEY, todayStr);
         checkMonthlyFreeze(); 
         saveState();
+        checkMorningReview();
         renderHabits();
         renderCal();
       } else if (!lastActiveDate) {
@@ -440,7 +536,6 @@
       const screen = document.getElementById('onboardingScreen');
       const container = document.getElementById('onboardingCatalog');
       container.innerHTML = '';
-
       FULL_CATALOG.forEach((group, gIdx) => {
         let groupHtml = `<div class="catalog-group"><div class="catalog-group-title">${group.category}</div>`;
         group.items.forEach((item, iIdx) => {
@@ -460,140 +555,137 @@
         groupHtml += `</div>`;
         container.innerHTML += groupHtml;
       });
-
       screen.classList.add('open');
     }
 
     function finishOnboarding() {
       const checkedBoxes = document.querySelectorAll('.onboard-chk:checked');
       habits = [];
-
+      const allDays = [0,1,2,3,4,5,6];
       checkedBoxes.forEach(chk => {
         const g = chk.getAttribute('data-g');
         const i = chk.getAttribute('data-i');
         const item = FULL_CATALOG[g].items[i];
         if (!habits.some(h => h.name === item.name)) {
-          habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: item.icon, name: item.name, sub: item.sub, done: false, note: '' });
+          habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: item.icon, name: item.name, sub: item.sub, days: allDays, done: false });
         }
       });
-
       if (habits.length === 0) {
-        habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', done: false, note: '' });
+        habits.push({ id: Date.now(), icon: '⚡', name: 'Фокус дня', sub: 'Главная задача', days: allDays, done: false });
       }
-
       if (!regDate) {
         regDate = todayStr;
         localStorage.setItem(REG_DATE_KEY, regDate);
       }
-
       saveState();
       document.getElementById('onboardingScreen').classList.remove('open');
       renderHabits();
     }
 
     function renderHabits() {
-      const el = document.getElementById('habitsList');
-      el.innerHTML = '';
-      if (!habits || habits.length === 0) {
-        el.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px;">Список пуст. Нажмите «+ Добавить», чтобы выбрать привычки.</div>';
-        updateProgress();
-        return;
+      const d = getLogicalDate();
+      const currentDayOfWeek = d.getDay();
+      
+      const todayHabits = habits ? habits.filter(h => h.days.includes(currentDayOfWeek)) : [];
+      const todayTodos = todos ? todos.filter(t => t.date === todayStr) : [];
+
+      const hList = document.getElementById('habitsList');
+      hList.innerHTML = '';
+      if (todayHabits.length === 0) {
+        hList.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">На сегодня регулярных привычек нет. Отдыхаем! 🌴</div>';
+      } else {
+        todayHabits.forEach(h => {
+          hList.innerHTML += `
+            <div class="habit-item ${h.done ? 'done' : ''}" onclick="toggleHabit(${h.id})">
+              <div class="habit-row">
+                <div class="habit-left">
+                  <div class="habit-icon">${h.icon}</div>
+                  <div class="habit-text-wrap">
+                    <div class="habit-name">${escapeHtml(h.name)}</div>
+                    <div class="habit-sub">${escapeHtml(h.sub)}</div>
+                  </div>
+                </div>
+                <div class="checkbox-btn">${h.done ? '✓' : ''}</div>
+              </div>
+            </div>`;
+        });
       }
 
-      habits.forEach(h => {
-        el.innerHTML += `
-          <div class="habit-item ${h.done ? 'done' : ''}">
-            <div class="habit-row">
-              <div class="habit-left" onclick="toggle(${h.id})">
-                <div class="habit-icon">${h.icon}</div>
-                <div class="habit-text-wrap">
-                  <div class="habit-name">${escapeHtml(h.name)}</div>
-                  <div class="habit-sub">${escapeHtml(h.sub)}</div>
+      const tList = document.getElementById('todosList');
+      const tBar = document.getElementById('todosTitleBar');
+      tList.innerHTML = '';
+      if (todayTodos.length > 0) {
+        tBar.style.display = 'flex';
+        todayTodos.forEach(t => {
+          tList.innerHTML += `
+            <div class="habit-item ${t.done ? 'done' : ''}" onclick="toggleTodo(${t.id})" style="border-color: rgba(139, 92, 246, 0.4);">
+              <div class="habit-row">
+                <div class="habit-left">
+                  <div class="habit-icon" style="background:rgba(139, 92, 246, 0.1);">📌</div>
+                  <div class="habit-text-wrap"><div class="habit-name">${escapeHtml(t.name)}</div></div>
                 </div>
+                <div class="checkbox-btn">${t.done ? '✓' : ''}</div>
               </div>
-              <div class="checkbox-btn" onclick="toggle(${h.id})">
-                ${h.done ? '✓' : ''}
-              </div>
-            </div>
-            <div class="habit-actions-row">
-              <button class="habit-action-link" onclick="toggleNoteBox(${h.id})">
-                📝 <span id="note-lbl-${h.id}">${h.note ? 'Заметка сохранена' : '+ Заметка'}</span>
-              </button>
-              <button class="habit-action-link del-btn" onclick="deleteHabit(${h.id})">
-                ✕ Удалить
-              </button>
-            </div>
-            <div class="note-box ${h.note ? 'open' : ''}" id="box-${h.id}">
-              <textarea class="note-input" id="area-${h.id}" placeholder="Заметка к привычке..." oninput="saveNote(${h.id}, this.value)"></textarea>
-            </div>
-          </div>
-        `;
-      });
+            </div>`;
+        });
+      } else {
+        tBar.style.display = 'none';
+      }
 
-      habits.forEach(h => {
-        const area = document.getElementById(`area-${h.id}`);
-        if (area) {
-          area.value = h.note || '';
-          area.style.height = 'auto';
-          area.style.height = (area.scrollHeight) + 'px';
-        }
-      });
-
-      updateProgress();
+      updateProgress(todayHabits, todayTodos);
     }
 
-    function toggle(id) {
+    function toggleHabit(id) {
       const h = habits.find(x => x.id === id);
       if (h) {
         h.done = !h.done;
         try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
-        saveState();
-        renderHabits();
+        saveState(); renderHabits();
       }
     }
 
-    function deleteHabit(id) {
-      if (confirm('Удалить привычку?')) {
-        habits = habits.filter(x => x.id !== id);
-        saveState();
-        renderHabits();
+    function toggleTodo(id) {
+      const t = todos.find(x => x.id === id);
+      if (t) {
+        t.done = !t.done;
+        try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); } catch(e) {}
+        saveState(); renderHabits();
       }
     }
 
-    function toggleNoteBox(id) {
-      document.getElementById(`box-${id}`).classList.toggle('open');
-    }
+    function updateProgress(todayHabits, todayTodos) {
+      const doneH = todayHabits.filter(h => h.done).length;
+      const doneT = todayTodos.filter(t => t.done).length;
+      const total = todayHabits.length + todayTodos.length;
+      const doneTotal = doneH + doneT;
+      const pct = total === 0 ? 0 : Math.round((doneTotal / total) * 100);
 
-    function saveNote(id, txt) {
-      const h = habits.find(x => x.id === id);
-      if (h) {
-        h.note = txt.slice(0, 300);
-        saveState();
-        const lbl = document.getElementById(`note-lbl-${id}`);
-        if (lbl) lbl.innerText = h.note ? 'Заметка сохранена' : '+ Заметка';
-        const area = document.getElementById(`area-${id}`);
-        if (area) {
-          area.style.height = 'auto';
-          area.style.height = (area.scrollHeight) + 'px';
-        }
-      }
-    }
-
-    function updateProgress() {
-      const done = habits ? habits.filter(h => h.done).length : 0;
-      const total = habits ? habits.length : 0;
-      const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-
-      document.getElementById('countLabel').innerText = `${done} из ${total} закрыто`;
+      document.getElementById('countLabel').innerText = `${doneTotal} из ${total} закрыто`;
       document.getElementById('pctLabel').innerText = `${pct}%`;
       document.getElementById('barFill').style.width = `${pct}%`;
       document.getElementById('freezeCount').innerText = `${freezes} шт.`;
       document.getElementById('streakDays').innerText = `${streak} дней`;
       document.getElementById('storyStreakText').innerText = `Серия: ${streak} дней (${pct}% сегодня)`;
 
-      const yearPct = Math.min(((streak / 365) * 100), 100).toFixed(1);
-      document.getElementById('yearProgressLabel').innerText = `День ${streak} из 365 (${yearPct}%)`;
-      document.getElementById('yearBarFill').style.width = `${yearPct}%`;
+      const milestones = [
+        { days: 3, title: '🎯 Ближайшая цель' }, { days: 7, title: '🚀 Первый рывок' },
+        { days: 14, title: '💪 Набор высоты' }, { days: 30, title: '🔥 Формирование привычки' },
+        { days: 90, title: '⚙️ Дисциплина' }, { days: 180, title: '💎 Образ жизни' },
+        { days: 365, title: '🏆 Путь легенды' }
+      ];
+
+      let currentMilestone = milestones[milestones.length - 1];
+      for (let m of milestones) {
+        if (streak < m.days || (streak === m.days && pct < 100)) { currentMilestone = m; break; }
+      }
+
+      const target = currentMilestone.days;
+      const milestonePct = Math.min(((streak / target) * 100), 100).toFixed(1);
+      
+      const titleEl = document.getElementById('milestoneTitle');
+      if (titleEl) titleEl.innerText = currentMilestone.title;
+      document.getElementById('yearProgressLabel').innerText = `День ${streak} из ${target} (${milestonePct}%)`;
+      document.getElementById('yearBarFill').style.width = `${milestonePct}%`;
 
       if (pct === 100 && total > 0) {
         history[todayStr] = 'done';
@@ -609,58 +701,121 @@
       }
     }
 
-    function handleFreezeClick() {
-      if (history[todayStr] === 'done') {
-        alert('План уже закрыт на 100%, спасать день не нужно!');
-        return;
+    // --- ЛОГИКА ПЛАНА (КОНСТРУКТОР НЕДЕЛИ) ---
+    let selectedPlanDate = todayStr;
+
+    function openPlanModal() {
+      selectedPlanDate = todayStr;
+      renderPlanDates();
+      renderPlanDayOverview();
+      openModal('planModal');
+    }
+
+    function renderPlanDates() {
+      const scroll = document.getElementById('planDateScroll');
+      scroll.innerHTML = '';
+      const daysStr = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+      const logicalBase = getLogicalDate();
+
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(logicalBase);
+        d.setDate(d.getDate() + i);
+        
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateKey = `${y}-${m}-${dd}`;
+        
+        const isActive = dateKey === selectedPlanDate ? 'active' : '';
+        const dayName = i === 0 ? 'Сегодня' : i === 1 ? 'Завтра' : daysStr[d.getDay()];
+
+        scroll.innerHTML += `
+          <div class="date-pill ${isActive}" onclick="selectPlanDate('${dateKey}')">
+            <div class="date-pill-day">${dayName}</div>
+            <div class="date-pill-num">${d.getDate()}</div>
+          </div>
+        `;
       }
-      if (history[todayStr] === 'frozen') {
-        alert('Этот день уже под защитой заморозки.');
+    }
+
+    function selectPlanDate(dateKey) {
+      selectedPlanDate = dateKey;
+      renderPlanDates();
+      renderPlanDayOverview();
+    }
+
+    function renderPlanDayOverview() {
+      const parts = selectedPlanDate.split('-').map(Number);
+      const selD = new Date(parts[0], parts[1] - 1, parts[2]);
+      const wDay = selD.getDay();
+      document.getElementById('planSelectedDateLabel').innerText = `${selD.getDate()}.${parts[1]}`;
+
+      const dayH = habits.filter(h => h.days.includes(wDay));
+      const dayT = todos.filter(t => t.date === selectedPlanDate);
+      
+      const ov = document.getElementById('planDayOverview');
+      ov.innerHTML = '';
+      
+      if (dayH.length === 0 && dayT.length === 0) {
+        ov.innerHTML = '<div style="color:var(--text-muted); font-size:12px; text-align:center; padding:10px;">Ничего не запланировано. Свободный день!</div>';
         return;
       }
 
+      dayH.forEach(h => {
+        ov.innerHTML += `<div style="font-size:13px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05);">⚡ ${escapeHtml(h.name)} <span style="color:var(--text-muted); font-size:10px;">(Привычка)</span></div>`;
+      });
+      dayT.forEach(t => {
+        ov.innerHTML += `<div style="font-size:13px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;">
+          <span>📌 ${escapeHtml(t.name)}</span>
+          <button onclick="deleteTodoFromPlan(${t.id})" style="background:transparent; border:none; color:#f85149; font-size:12px; cursor:pointer;">Удалить</button>
+        </div>`;
+      });
+    }
+
+    function addTodoFromPlan() {
+      const input = document.getElementById('planTodoInput');
+      const val = input.value.trim();
+      if (val.length < 2) return alert('Введите дело');
+      
+      todos.push({ id: Date.now() + Math.floor(Math.random()*1000), name: val, date: selectedPlanDate, done: false });
+      input.value = '';
+      saveState();
+      renderPlanDayOverview();
+    }
+
+    function deleteTodoFromPlan(id) {
+      todos = todos.filter(t => t.id !== id);
+      saveState();
+      renderPlanDayOverview();
+    }
+
+    function handleFreezeClick() {
+      if (history[todayStr] === 'done') {
+        alert('План уже закрыт на 100%, спасать день не нужно!'); return;
+      }
+      if (history[todayStr] === 'frozen') {
+        alert('Этот день уже под защитой заморозки.'); return;
+      }
       if (freezes <= 0) {
-        if (confirm('Бесплатная заморозка в этом месяце исчерпана. Докупить экстренную заморозку за 20 ₽? (максимум 3)')) {
-          alert('В разработке: здесь откроется нативное окно оплаты Telegram Stars/ЮKassa. Пока выдаем заморозку тестово!');
-          freezes += 1;
-          saveState();
-          updateProgress();
+        if (confirm('Бесплатная заморозка исчерпана. Докупить экстренную заморозку за 20 ₽?')) {
+          alert('В разработке: здесь откроется нативное окно оплаты. Пока выдаем заморозку тестово!');
+          freezes += 1; saveState(); renderHabits();
         }
         return;
       }
-
       if (confirm(`Использовать 1 заморозку для защиты сегодняшнего дня? (Осталось: ${freezes})`)) {
-        freezes -= 1;
-        history[todayStr] = 'frozen';
-        saveState();
-        updateProgress();
-        renderCal();
-        alert('🧊 Заморозка активирована! Твоя серия в безопасности.');
+        freezes -= 1; history[todayStr] = 'frozen';
+        saveState(); renderHabits(); renderCal();
+        alert('🧊 Заморозка активирована! Серия в безопасности.');
       }
     }
 
-    function inviteFriend() {
-      const shareUrl = `https://t.me/share/url?url=https://t.me/${BOT_USERNAME}&text=${encodeURIComponent('Держи личную дисциплину со мной в Discipline OS:')}`;
-      if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
-      else window.open(shareUrl, '_blank');
-    }
-
-    function openStoriesModal() { openModal('storiesModal'); }
-
-    function shareStoryNative() {
-      const text = encodeURIComponent(`Я держу дисциплину в Discipline OS уже ${streak} дней подряд! Присоединяйся: https://t.me/${BOT_USERNAME}`);
-      const shareUrl = `https://t.me/share/url?url=&text=${text}`;
-      if (tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
-      else window.open(shareUrl, '_blank');
-      closeModal('storiesModal');
-    }
-
     function openAddModal() {
+      document.querySelectorAll('.day-toggle').forEach(el => el.classList.add('active')); // Сбрасываем дни на "Все"
       const cl = document.getElementById('modalCatalogList');
       cl.innerHTML = '';
       FULL_CATALOG.forEach(group => {
         group.items.forEach(item => {
-          const alreadyAdded = habits && habits.some(h => h.name === item.name);
           cl.innerHTML += `
             <div style="display:flex; justify-content:space-between; align-items:center; background:#111418; padding:8px 12px; border-radius:10px;">
               <div style="display:flex; align-items:center; gap:8px;">
@@ -670,9 +825,7 @@
                   <div style="font-size:10px; color:var(--text-muted);">${escapeHtml(item.sub)}</div>
                 </div>
               </div>
-              <button ${alreadyAdded ? 'disabled' : ''} onclick="addSingleHabit('${item.icon}', '${escapeHtml(item.name)}', '${escapeHtml(item.sub)}')" style="background:${alreadyAdded ? '#21262d' : '#30363d'}; color:${alreadyAdded ? '#8b949e' : '#fff'}; border:none; font-size:11px; padding:5px 10px; border-radius:8px; cursor:${alreadyAdded ? 'default' : 'pointer'};">
-                ${alreadyAdded ? 'В трекере' : '+ Взять'}
-              </button>
+              <button onclick="addSingleHabit('${item.icon}', '${escapeHtml(item.name)}', '${escapeHtml(item.sub)}')" style="background:#30363d; color:#fff; border:none; font-size:11px; padding:5px 10px; border-radius:8px; cursor:pointer;">+ Взять</button>
             </div>
           `;
         });
@@ -682,47 +835,43 @@
 
     function addSingleHabit(icon, name, sub) {
       if (habits.length >= maxAllowed) {
-        closeModal('addModal');
-        tab('pro', document.querySelectorAll('.nav-item')[2]);
-        alert('В тарифе Free доступно до 3 привычек.');
-        return;
+        closeModal('addModal'); tab('pro', document.querySelectorAll('.nav-item')[2]);
+        return alert('В тарифе Free доступно до 3 привычек.');
       }
-      habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: icon, name: name, sub: sub, done: false, note: '' });
-      saveState();
-      closeModal('addModal');
-      renderHabits();
+      const days = getSelectedDays();
+      habits.push({ id: Date.now() + Math.floor(Math.random()*1000), icon, name, sub, days, done: false });
+      saveState(); closeModal('addModal'); renderHabits();
     }
 
     function addCustomHabit() {
       const input = document.getElementById('customName');
       const val = input.value.trim();
-      if (val.length < 2) {
-        alert('Введите название привычки.');
-        return;
-      }
+      if (val.length < 2) return alert('Введите название.');
       if (habits.length >= maxAllowed) {
-        closeModal('addModal');
-        tab('pro', document.querySelectorAll('.nav-item')[2]);
-        alert('В тарифе Free доступно до 3 привычек.');
-        return;
+        closeModal('addModal'); tab('pro', document.querySelectorAll('.nav-item')[2]);
+        return alert('В тарифе Free доступно до 3 привычек.');
       }
-      habits.push({ id: Date.now() + Math.floor(Math.random() * 10000), icon: '🎯', name: val, sub: 'Личная цель', done: false, note: '' });
-      input.value = '';
-      saveState();
-      closeModal('addModal');
-      renderHabits();
+      const days = getSelectedDays();
+      habits.push({ id: Date.now() + Math.floor(Math.random()*1000), icon: '🎯', name: val, sub: 'Личная цель', days, done: false });
+      input.value = ''; saveState(); closeModal('addModal'); renderHabits();
     }
 
-    function openPlanModal() {
-      openModal('planModal');
+    function inviteFriend() {
+      const url = `https://t.me/share/url?url=https://t.me/${BOT_USERNAME}&text=${encodeURIComponent('Держи личную дисциплину со мной в Discipline OS:')}`;
+      if (tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
+    }
+
+    function openStoriesModal() { openModal('storiesModal'); }
+
+    function shareStoryNative() {
+      const url = `https://t.me/share/url?url=&text=${encodeURIComponent(`Я держу дисциплину в Discipline OS уже ${streak} дней подряд! Присоединяйся: https://t.me/${BOT_USERNAME}`)}`;
+      if (tg?.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
+      closeModal('storiesModal');
     }
 
     function openModal(id) {
       document.getElementById(id).classList.add('open');
-      if (tg?.BackButton) {
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => closeModal(id));
-      }
+      if (tg?.BackButton) { tg.BackButton.show(); tg.BackButton.onClick(() => { closeModal(id); renderHabits(); }); }
     }
 
     function closeModal(id) {
@@ -733,20 +882,18 @@
     function renderCal() {
       const g = document.getElementById('calGrid');
       g.innerHTML = '';
-      const now = new Date();
+      const now = getLogicalDate();
       const currentDay = now.getDate();
       const year = now.getFullYear();
       const month = now.getMonth();
       const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
       document.getElementById('calMonthTitle').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
       for (let d = 1; d <= daysInMonth; d++) {
         const c = document.createElement('div');
         c.className = 'day-cell';
         c.innerText = d;
-
         const padM = String(month + 1).padStart(2, '0');
         const padD = String(d).padStart(2, '0');
         const dateKey = `${year}-${padM}-${padD}`;
@@ -756,15 +903,12 @@
         } else {
           if (history[dateKey] === 'done') c.classList.add('done-100');
           if (history[dateKey] === 'frozen') c.classList.add('frozen');
-
           if (d === currentDay) {
             c.classList.add('today');
           } else if (d > currentDay) {
-            c.classList.add('locked');
-            c.onclick = () => alert('Этот день еще впереди!');
+            c.classList.add('locked'); c.onclick = () => alert('Этот день еще впереди!');
           }
         }
-        
         g.appendChild(c);
       }
     }
@@ -781,15 +925,11 @@
     }
 
     function escapeHtml(str) {
-      if (!str) return '';
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+      return String(str||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    if (!habits || habits.length === 0) {
-      renderOnboardingScreen();
-    } else {
-      renderHabits();
-    }
+    if (!habits || habits.length === 0) renderOnboardingScreen();
+    else { renderHabits(); checkMorningReview(); }
   </script>
 </body>
 </html>
