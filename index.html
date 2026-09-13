@@ -70,19 +70,19 @@
     .plan-card { background: radial-gradient(circle at top right, rgba(139, 92, 246, 0.12), var(--card-bg) 60%); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 18px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
     .invite-btn { background: var(--ice); color: #0b1320; border: none; padding: 7px 12px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
 
-    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 4px; }
     .day-cell { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; background: rgba(255,255,255,0.04); cursor: pointer; border: 1px solid transparent; }
     .day-cell.done-100 { background: rgba(46, 160, 67, 0.25); border-color: #2ea043; color: #3fb950; font-weight: 700; }
     .day-cell.frozen { background: rgba(56, 189, 248, 0.2); border-color: var(--ice); color: var(--ice); }
     .day-cell.today { border: 2px solid #58a6ff; font-weight: 800; }
     .day-cell.locked { opacity: 0.25; cursor: not-allowed; border: 1px dashed rgba(255,255,255,0.1); }
     .day-cell.pre-reg { opacity: 0.15; pointer-events: none; }
+    .day-cell.empty { background: transparent; border: none; pointer-events: none; cursor: default; }
 
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: flex-end; justify-content: center; }
     .modal.open { display: flex; }
     .modal-content { background: #161b22; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; }
 
-    /* Планировщик */
     .date-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; }
     .date-scroll::-webkit-scrollbar { display: none; }
     .date-pill { background: #0f131a; border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 16px; text-align: center; cursor: pointer; min-width: 60px; }
@@ -144,7 +144,6 @@
 
     <!-- TODAY -->
     <div id="view-today" class="view-screen active">
-
       <div class="plan-card">
         <div>
           <div style="font-size: 13px; font-weight: 700;">🌙 План на неделю</div>
@@ -192,6 +191,11 @@
       </div>
       <div style="font-size: 15px; font-weight: 700; margin-bottom: 4px;" id="calMonthTitle">Календарь</div>
       <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Зелёный = 100% плана. Голубой = заморозка.</div>
+      
+      <!-- Сетка дней недели для календаря -->
+      <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; font-size: 10px; color: var(--text-muted); font-weight: 700; margin-bottom: 4px;">
+        <div>ПН</div><div>ВТ</div><div>СР</div><div>ЧТ</div><div>ПТ</div><div>СБ</div><div>ВС</div>
+      </div>
       <div class="days-grid" id="calGrid"></div>
     </div>
 
@@ -342,10 +346,9 @@
       document.getElementById('storyUserName').innerText = currentTgUser.first_name;
     }
 
-    // --- ЛОГИКА ВРЕМЕНИ 3:00 AM ---
     function getLogicalDate() {
       const d = new Date();
-      d.setHours(d.getHours() - 3); // Смещаем день на 3 часа назад
+      d.setHours(d.getHours() - 3); 
       return d;
     }
     
@@ -400,6 +403,19 @@
     }
 
     let habits = safeJsonParse(STORAGE_KEY, null);
+    
+    // --- ПАТЧ (МИГРАЦИЯ): ЛЕЧИМ СТАРЫЕ ПРИВЫЧКИ ---
+    if (habits && Array.isArray(habits)) {
+      let needsSave = false;
+      habits.forEach(h => {
+        if (!h.days) {
+          h.days = [0, 1, 2, 3, 4, 5, 6];
+          needsSave = true;
+        }
+      });
+      if (needsSave) localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+    }
+
     let todos = safeJsonParse(TODOS_KEY, []);
     let streak = parseInt(localStorage.getItem(STREAK_KEY) || '0', 10);
     let freezes = localStorage.getItem(FREEZES_KEY) !== null ? parseInt(localStorage.getItem(FREEZES_KEY), 10) : 1;
@@ -409,7 +425,6 @@
     let todayStr = getLogicalDateString();
     let celebratedToday = false;
 
-    // Выбор дней при добавлении привычки
     document.querySelectorAll('.day-toggle').forEach(el => {
       el.addEventListener('click', function() {
         this.classList.toggle('active');
@@ -420,7 +435,7 @@
       const active = document.querySelectorAll('.day-toggle.active');
       let days = [];
       active.forEach(el => days.push(parseInt(el.getAttribute('data-day'), 10)));
-      return days.length > 0 ? days : [0,1,2,3,4,5,6]; // Если все отжаты, страхуем на каждый день
+      return days.length > 0 ? days : [0,1,2,3,4,5,6]; 
     }
 
     function checkMonthlyFreeze() {
@@ -444,7 +459,6 @@
       } catch (e) {}
     }
 
-    // --- ЛОГИКА УТРЕННЕЙ РЕВИЗИИ (ПЕРЕНОС ДЕЛ) ---
     function checkMorningReview() {
       const overdue = todos.filter(t => t.date < todayStr && !t.done);
       if (overdue.length > 0) {
@@ -473,11 +487,10 @@
         if (t) t.date = todayStr;
       }
       saveState();
-      checkMorningReview(); // Перерисовываем список или закрываем
+      checkMorningReview(); 
       renderHabits();
     }
     function finishReview() {
-      // Удаляем все оставшиеся, если юзер нажал Готово
       todos = todos.filter(t => !(t.date < todayStr && !t.done));
       saveState();
       closeModal('reviewModal');
@@ -496,7 +509,6 @@
         const currD = new Date(currParts[0], currParts[1] - 1, currParts[2]);
         const diffDays = Math.round((currD - lastD) / 86400000);
 
-        // Проверяем, были ли задачи в ПРОШЛЫЙ активный день
         const lastDWeekDay = lastD.getDay();
         const lastDayHabits = habits.filter(h => h.days.includes(lastDWeekDay));
         const lastDayTodos = todos.filter(t => t.date === lastActiveDate);
@@ -504,7 +516,7 @@
 
         if (diffDays === 1) {
           if (lastDayTotal === 0 || history[lastActiveDate] === 'done') {
-             if (lastDayTotal > 0) streak += 1; // Увеличиваем стрик только если были задачи
+             if (lastDayTotal > 0) streak += 1; 
           } else if (history[lastActiveDate] === 'frozen') {
             // серия сохранена
           } else {
@@ -514,7 +526,7 @@
           if (history[lastActiveDate] !== 'frozen') streak = 0;
         }
 
-        habits.forEach(h => h.done = false); // Сбрасываем галочки
+        habits.forEach(h => h.done = false); 
         todayStr = actualToday;
         celebratedToday = false;
         
@@ -701,7 +713,6 @@
       }
     }
 
-    // --- ЛОГИКА ПЛАНА (КОНСТРУКТОР НЕДЕЛИ) ---
     let selectedPlanDate = todayStr;
 
     function openPlanModal() {
@@ -811,7 +822,7 @@
     }
 
     function openAddModal() {
-      document.querySelectorAll('.day-toggle').forEach(el => el.classList.add('active')); // Сбрасываем дни на "Все"
+      document.querySelectorAll('.day-toggle').forEach(el => el.classList.add('active')); 
       const cl = document.getElementById('modalCatalogList');
       cl.innerHTML = '';
       FULL_CATALOG.forEach(group => {
@@ -879,6 +890,7 @@
       if (tg?.BackButton) tg.BackButton.hide();
     }
 
+    // --- ПАТЧ: СДВИГ СЕТКИ КАЛЕНДАРЯ ПО ДНЯМ НЕДЕЛИ ---
     function renderCal() {
       const g = document.getElementById('calGrid');
       g.innerHTML = '';
@@ -888,7 +900,19 @@
       const month = now.getMonth();
       const monthName = now.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
       document.getElementById('calMonthTitle').innerText = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+      
       const daysInMonth = new Date(year, month + 1, 0).getDate();
+      
+      // Высчитываем, на какой день недели выпадает 1-е число
+      const firstDayDate = new Date(year, month, 1).getDay();
+      const emptyCells = firstDayDate === 0 ? 6 : firstDayDate - 1; // Корректируем под Пн-Вс
+
+      // Добавляем пустые ячейки для сдвига
+      for (let i = 0; i < emptyCells; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'day-cell empty';
+        g.appendChild(emptyDiv);
+      }
 
       for (let d = 1; d <= daysInMonth; d++) {
         const c = document.createElement('div');
